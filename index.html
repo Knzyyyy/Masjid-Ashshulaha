@@ -732,9 +732,7 @@
       @media (hover: none) {
         .act-card:hover, .kontak-card:hover, .pengurus-card:hover { transform: none; }
       }
-      @media (max-width: 639px), (prefers-reduced-motion: reduce) {
-        .reveal, .timeline-content { opacity: 1; transform: none; transition: none; }
-        .card-in, .pulse-dot { animation: none; }
+      @media (max-width: 639px) {
         .hero-card, .btn-ghost, .activity-photo-count, header.site-nav.solid { backdrop-filter: none; }
         .hero-card:not(.solid-card), .btn-ghost { background: rgba(6,40,21,.7); }
       }
@@ -1342,7 +1340,7 @@
       /* ================= Animasi reveal ================= */
       var revealObs = null;
       function observeReveals() {
-        if (!("IntersectionObserver" in window) || window.matchMedia("(max-width: 639px), (prefers-reduced-motion: reduce)").matches) {
+        if (!("IntersectionObserver" in window) || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
           $$(".reveal").forEach(function (el) { el.classList.add("is-visible"); });
           return;
         }
@@ -1351,7 +1349,7 @@
             entries.forEach(function (e) {
               if (e.isIntersecting) { e.target.classList.add("is-visible"); revealObs.unobserve(e.target); }
             });
-          }, { rootMargin: "120px 0px", threshold: 0 });
+          }, { threshold: 0.1 });
         }
         $$(".reveal:not(.is-visible)").forEach(function (el) { revealObs.observe(el); });
       }
