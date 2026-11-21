@@ -549,6 +549,24 @@
       .page { display: none; }
       .page.active { display: block; }
       [hidden] { display: none !important; }
+      .public-content-sec { padding: 4rem 0; scroll-margin-top: 6rem; }
+      .announcement-list { display: grid; gap: 1rem; margin-top: 2rem; }
+      .announcement-card { border: 1px solid var(--border); border-radius: 1.25rem; padding: 1.5rem; background: #fff; }
+      .announcement-card.pinned { border-color: #b3d8a8; background: #f6faf1; }
+      .announcement-card h3 { font-family: var(--font-display); font-weight: 400; font-size: 24px; margin: .75rem 0; }
+      .announcement-card p { font-size: 14px; color: var(--dim); white-space: pre-wrap; overflow-wrap: anywhere; }
+      .announcement-card time { display: block; font-size: 12px; color: var(--dim); margin-top: 1rem; }
+      .donation-section { background: var(--surface-alt); }
+      .donation-grid { display: grid; gap: 2rem; align-items: start; margin-top: 2rem; }
+      .donation-card { border: 1px solid var(--border); border-radius: 1.5rem; padding: 1.5rem; background: #fff; }
+      .donation-description { margin-top: 1rem; color: var(--dim); white-space: pre-wrap; max-width: 42rem; }
+      .donation-bank { font-size: 14px; font-weight: 700; color: var(--accent-deep); }
+      .donation-account { font-size: clamp(22px,4vw,32px); font-weight: 800; letter-spacing: .04em; margin: .5rem 0; overflow-wrap: anywhere; }
+      .donation-holder { font-size: 14px; color: var(--dim); }
+      .qris-image { display: block; width: min(100%,320px); max-height: 440px; object-fit: contain; margin: 1rem auto 0; }
+      .organization-empty { font-size: 14px; color: var(--dim); text-align: center; grid-column: 1 / -1; padding: 1rem; }
+      .settings-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+      @media (min-width: 768px) { .donation-grid { grid-template-columns: 1fr 1fr; } }
     </style>
   </head>
   <body>
@@ -686,6 +704,10 @@
             <p>Buka halaman kegiatan lengkap untuk melihat semua agenda masjid.</p>
           </div>
         </div>
+      </section>
+
+      <section class="public-content-sec" id="pengumuman" aria-labelledby="announcementHeading" hidden>
+        <div class="wrap"><p class="kicker">Kabar untuk Jamaah</p><h2 class="sec-title" id="announcementHeading">Pengumuman Masjid</h2><div class="announcement-list" id="announcementList"></div></div>
       </section>
 
       <!-- Jadwal Sholat -->
@@ -853,6 +875,10 @@
         </div>
       </section>
 
+      <section class="public-content-sec donation-section" id="donasi" aria-labelledby="donationHeading" hidden>
+        <div class="wrap"><p class="kicker">Infak &amp; Sedekah</p><h2 class="sec-title" id="donationHeading">Bersama Memakmurkan Masjid</h2><p class="donation-description" id="donationDescription"></p><div class="donation-grid"><div class="donation-card" id="donationBankCard"><p class="donation-bank" id="donationBank"></p><p class="donation-account" id="donationAccount"></p><p class="donation-holder" id="donationHolder"></p><button type="button" class="btn btn-line" id="copyDonationBtn" style="margin-top:1.25rem;width:auto" aria-live="polite">Salin nomor rekening</button></div><div class="donation-card" id="donationQrisCard"><p class="donation-bank">Pindai QRIS untuk berinfak</p><img class="qris-image" id="donationQris" alt="QRIS resmi masjid untuk infak" loading="lazy" /></div></div></div>
+      </section>
+
       <!-- Kontak -->
       <section class="kontak-sec" id="kontak">
         <div class="wrap kontak-inner">
@@ -1005,8 +1031,8 @@
               <h2 class="sec-title">Struktur Organisasi</h2>
               <p class="lead">Bagan kepengurusan Dewan Kemakmuran Masjid (DKM) Ash-Shulaha, Komplek Pondok Jatimurni-Bekasi.</p>
               <div class="badges">
-                <span class="badge mint">Periode 16 Februari 2025 s/d 16 Februari 2028</span>
-                <span class="badge line">Lampiran Surat No: 001/SK-DKM/II/2025</span>
+                <span class="badge mint" id="organizationPeriod">Periode 16 Februari 2025 s/d 16 Februari 2028</span>
+                <span class="badge line" id="organizationDecree">Lampiran Surat No: 001/SK-DKM/II/2025</span>
               </div>
             </div>
           </div>
@@ -1071,6 +1097,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./config.js"></script>
+    <script src="./content-defaults.js"></script>
     <script>
       "use strict";
       var $ = function (s, r) { return (r || document).querySelector(s); };
@@ -1339,7 +1366,7 @@
             if (c !== 0) return c;
           } else if (a.tanggal) return -1;
           else if (b.tanggal) return 1;
-          return b.id - a.id;
+          return (b.created_at || "").localeCompare(a.created_at || "") || (typeof a.id === "number" ? b.id - a.id : 0);
         });
       }
       function kegiatanCard(k, index) {
@@ -1466,12 +1493,12 @@
       $("#unitGrid").innerHTML = UNIT_DKM.map(function (s, i) {
         return '<div class="reveal" style="transition-delay:' + (i % 3) * 90 + 'ms">' + accordionHTML(s) + "</div>";
       }).join("");
-      $$(".accordion > button").forEach(function (btn) {
-        btn.addEventListener("click", function () {
+      $("#page-struktur").addEventListener("click", function (event) {
+          var btn = event.target.closest(".accordion > button");
+          if (!btn) return;
           var acc = btn.parentElement;
           var open = acc.classList.toggle("open");
           btn.setAttribute("aria-expanded", open ? "true" : "false");
-        });
       });
 
       /* ---------- Timeline Sejarah: aktif tepat di tengah layar, bolak-balik ---------- */
@@ -1793,21 +1820,24 @@
 
       /* ================= Kegiatan dari Supabase ================= */
       /* Kegiatan dibaca langsung dari tabel "kegiatan" di Supabase.
-         Kalau Supabase belum dikonfigurasi / tabel kosong / fetch gagal,
+          Kalau Supabase belum dikonfigurasi / fetch gagal,
          daftar kegiatan bawaan di bawah (KEGIATAN) tetap dipakai. */
       function loadKegiatanFromSupabase() {
         try {
           var cfg = window.SUPABASE_CONFIG || {};
           if (!cfg.url || !cfg.anonKey || cfg.url.indexOf("https://") !== 0 || cfg.anonKey.indexOf("ISI_") === 0) return;
           if (!window.supabase) return;
-          var client = window.supabase.createClient(cfg.url, cfg.anonKey);
+          var client = window.MASJID_PUBLIC_CLIENT = window.supabase.createClient(cfg.url, cfg.anonKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: "masjid-public" } });
           client.from("kegiatan").select("id,title,description,category,event_date,image_url,created_at")
+            .eq("status", "published")
             .order("event_date", { ascending: false, nullsFirst: false })
             .order("created_at", { ascending: false })
             .then(function (res) {
-              if (res.error || !res.data || res.data.length === 0) return;
+              if (res.error || !res.data) return;
               var mapped = res.data.map(function (r) {
-                return { id: r.id, judul: r.title, deskripsi: r.description || "", kategori: r.category || "Kajian", tanggal: r.event_date || null, foto: r.image_url || null };
+                var photoUrl = null;
+                try { var parsed = new URL(r.image_url); if (parsed.protocol === "https:" || parsed.protocol === "http:") photoUrl = parsed.href; } catch (e) {}
+                return { id: r.id, judul: r.title, deskripsi: r.description || "", kategori: r.category || "Kajian", tanggal: r.event_date || null, foto: photoUrl, created_at: r.created_at };
               });
               KEGIATAN.length = 0;
               mapped.forEach(function (k) { KEGIATAN.push(k); });
@@ -1826,5 +1856,6 @@
       setInterval(tickClock, 1000);
       loadPrayer();
     </script>
+    <script src="./site-content.js"></script>
   </body>
 </html>

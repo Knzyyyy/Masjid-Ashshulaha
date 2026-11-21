@@ -4,348 +4,95 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
-  <title>Admin Kegiatan — Masjid Ash Shulaha</title>
+  <meta name="color-scheme" content="light" />
+  <title>Ruang Pengurus — Masjid Ash Shulaha</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <style>
-    :root { --bg:#fff; --alt:#f2f7f3; --text:#101410; --dim:#5b665c; --border:#e2eae3; --accent:#00ad21; --deep:#075e2c; --ink:#063d1e; --mint:#e9f9ec; --red:#c81e1e; }
-    * { box-sizing:border-box; }
-    body { margin:0; font-family:"Plus Jakarta Sans",system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.6; }
-    .wrap { width:min(56rem,100%); margin-inline:auto; padding:1.5rem 1rem 4rem; }
-    header { background:var(--ink); color:#fff; }
-    header .wrap { padding-top:1.25rem; padding-bottom:1.25rem; display:flex; flex-wrap:wrap; gap:.5rem 1rem; align-items:center; justify-content:space-between; }
-    header h1 { font-family:Marcellus,Georgia,serif; font-weight:400; font-size:24px; margin:0; }
-    header p { margin:.25rem 0 0; font-size:13px; color:rgba(255,255,255,.75); }
-    header a { color:#7be495; font-size:14px; font-weight:600; }
-    .badge { display:inline-block; background:#7be495; color:var(--ink); border-radius:999px; padding:.25rem .75rem; font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
-    .status { margin-top:1.25rem; border:1px solid var(--border); border-radius:1rem; padding:.875rem 1.25rem; background:var(--alt); font-size:14px; }
-    .status.err { background:#fef2f2; border-color:#fecaca; color:#7f1d1d; }
-    .status.ok { background:var(--mint); border-color:#bbf7d0; }
-    .warn { margin-top:1rem; border:1px solid #fde68a; background:#fffbeb; border-radius:1rem; padding:.875rem 1.25rem; font-size:13.5px; color:#78350f; }
-    .card { margin-top:1.25rem; border:1px solid var(--border); border-radius:1.5rem; padding:1.5rem; box-shadow:0 2px 16px rgba(6,61,30,.05); }
-    .card h2 { font-family:Marcellus,Georgia,serif; font-weight:400; font-size:22px; margin:0 0 1rem; }
-    label { display:block; font-size:13px; font-weight:700; margin-top:1rem; }
-    label:first-of-type { margin-top:0; }
-    input, select, textarea { width:100%; margin-top:.375rem; font:inherit; font-size:15px; border:1px solid var(--border); border-radius:.75rem; padding:.625rem .875rem; background:#fff; }
-    input:focus, select:focus, textarea:focus { outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent); }
-    textarea { min-height:6rem; resize:vertical; }
-    .hint { font-size:12.5px; color:var(--dim); font-weight:400; }
-    .row { display:grid; gap:0 1rem; }
-    @media (min-width:640px) { .row { grid-template-columns:1fr 1fr; } }
-    .actions { display:flex; flex-wrap:wrap; gap:.625rem; margin-top:1.25rem; }
-    button { font:inherit; font-size:14px; font-weight:700; border:none; border-radius:999px; padding:.75rem 1.5rem; cursor:pointer; min-height:2.75rem; }
-    .btn-green { background:var(--accent); color:#fff; }
-    .btn-green:hover { background:#00931d; }
-    .btn-line { background:#fff; box-shadow:inset 0 0 0 1px var(--border); color:var(--text); }
-    .btn-line:hover { background:var(--alt); }
-    .btn-red { background:#fff; box-shadow:inset 0 0 0 1px #fecaca; color:var(--red); padding:.5rem 1rem; min-height:2.25rem; font-size:13px; }
-    .btn-red:hover { background:#fef2f2; }
-    .btn-edit { background:var(--mint); color:var(--deep); padding:.5rem 1rem; min-height:2.25rem; font-size:13px; }
-    .btn-edit:hover { background:#d1f5d8; }
-    table { width:100%; border-collapse:collapse; font-size:14px; }
-    th, td { text-align:left; padding:.625rem .5rem; border-bottom:1px solid var(--border); vertical-align:top; }
-    th { font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); }
-    td .cat { display:inline-block; background:var(--mint); color:var(--deep); border-radius:999px; padding:.125rem .625rem; font-size:12px; font-weight:700; }
-    td .desc { color:var(--dim); font-size:13px; display:block; margin-top:.25rem; }
-    .empty { text-align:center; color:var(--dim); padding:2rem 1rem; font-size:14px; }
-    .table-wrap { overflow-x:auto; }
-    [hidden] { display:none !important; }
-    .login-error { margin-top:1rem; border:1px solid #fecaca; background:#fef2f2; color:#7f1d1d; border-radius:.75rem; padding:.625rem .875rem; font-size:14px; }
-    .login-card { max-width:28rem; margin-left:auto; margin-right:auto; }
-    #logoutBtn { background:transparent; box-shadow:inset 0 0 0 1px rgba(255,255,255,.5); color:#fff; padding:.5rem 1rem; min-height:2.25rem; font-size:13px; }
-    #logoutBtn:hover { background:rgba(255,255,255,.12); }
-    @media (max-width:640px) { table, thead, tbody, th, td, tr { display:block; } thead { display:none; } tr { border:1px solid var(--border); border-radius:1rem; padding:.75rem; margin-bottom:.75rem; } td { border:none; padding:.25rem 0; } }
-  </style>
+  <link rel="stylesheet" href="./admin.css" />
 </head>
 <body>
-  <header>
-    <div class="wrap">
-      <div>
-        <span class="badge">Mode Admin</span>
-        <h1>Admin Kegiatan</h1>
-        <p>Masjid Ash Shulaha &middot; DKM Ashshulaha &middot; data tersimpan di Supabase (tabel <code>kegiatan</code>)</p>
-      </div>
-      <span style="display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
-        <a href="./index.html">&larr; Lihat website</a>
-        <button type="button" id="logoutBtn" hidden>Keluar</button>
-      </span>
-    </div>
-  </header>
+  <svg class="svg-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 11h18m-13 5h2m4 0h2"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 21v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6m2 4a5 5 0 0 1 3 4v2"/></symbol>
+    <symbol id="i-megaphone" viewBox="0 0 24 24"><path d="m4 9 16-5v16L4 15V9Zm4 7 1 5h4l-1-4M20 9h2m-2 6h2"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10Zm6 11v-8h6v8"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0l-1 1-1-1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M7 17 17 7M7 7h10v10"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="7.5"/><path d="m16 16 5 5"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="m15 5 4 4M4 20l4-1L21 6l-4-4L4 15v5Z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 3H4v18h5m7-14 5 5-5 5M9 12h12"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m21 15-6-6L3 21"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="m12 3 9 4v6c0 5-9 9-9 9s-9-4-9-9V7l9-4Z"/><path d="m8 12 3 3 5-6"/></symbol>
+    <symbol id="i-mosque" viewBox="0 0 32 32"><path d="M8 19c-3-7 5-8 8-13 3 5 11 6 8 13M7 19h18v11H7V19Zm5 11v-5a4 4 0 0 1 8 0v5M3 30V9m-2 4h4M27 30V9m-2 4h4M16 6V2m0 0a2 2 0 0 0 3-1"/></symbol>
+  </defs></svg>
 
-  <main class="wrap">
-    <div id="status" class="status">Menghubungkan ke Supabase&hellip;</div>
-    <div class="warn">
-      Halaman ini <strong>tidak ditautkan dari menu website</strong> dan tidak diindeks mesin pencari,
-      dan hanya bisa dibuka setelah <strong>login dengan akun admin (email + password)</strong> yang dibuat
-      di Supabase Dashboard &gt; Authentication &gt; Users. Tanpa login, kegiatan tidak bisa ditambah,
-      diubah, atau dihapus. Jangan bagikan URL halaman ini dan akun admin ke sembarang orang.
+  <section class="login-screen" id="loginScreen">
+    <div class="login-story">
+      <a class="brand" href="./index.html"><span class="brand-mark"><svg><use href="#i-mosque"/></svg></span><span>Masjid Ash Shulaha<small>JATIMURNI · BEKASI</small></span></a>
+      <div class="login-story-content"><span class="eyebrow light">RUANG PENGURUS</span><h1>Merawat amanah.<br />Menghidupkan<br /><em>kebersamaan.</em></h1><p>Satu ruang untuk mengelola kabar, kegiatan, dan informasi masjid bagi seluruh jamaah.</p><div class="story-line"></div><span class="story-caption">Dewan Kemakmuran Masjid Ash Shulaha</span></div>
+      <span class="login-copyright">Dikelola dengan niat baik, untuk kebaikan bersama.</span>
     </div>
-
-    <section class="card login-card" id="loginCard" hidden>
-      <h2>Login admin</h2>
-      <p style="font-size:14px; color:var(--dim); margin-top:0;">Masuk dengan akun admin yang dibuat di Supabase (Authentication &gt; Users).</p>
+    <div class="login-side"><div class="login-box">
+      <span class="label-pill"><span class="live-dot"></span> Portal pengurus</span>
+      <h2>Assalamu’alaikum.</h2><p class="muted">Selamat datang kembali. Masuk untuk mengelola website masjid.</p>
       <form id="loginForm">
-        <label>Email admin
-          <input id="loginEmail" type="email" required autocomplete="username" placeholder="admin@masjid-ashshulaha.id" />
-        </label>
-        <label>Password
-          <input id="loginPassword" type="password" required autocomplete="current-password" placeholder="Password admin" />
-        </label>
-        <div id="loginError" class="login-error" hidden></div>
-        <div class="actions">
-          <button type="submit" class="btn-green" id="loginBtn">Masuk</button>
-        </div>
+        <label>Email<input name="email" type="email" required autocomplete="username" placeholder="Email pengurus" /></label>
+        <label>Password<span class="password-wrap"><input name="password" type="password" required autocomplete="current-password" placeholder="Masukkan password" /><button type="button" id="togglePassword" class="icon-button" aria-label="Tampilkan password" aria-pressed="false"><svg><use href="#i-eye"/></svg></button></span></label>
+        <div id="loginError" class="notice error" role="alert" hidden></div>
+        <button class="button primary full" type="submit" id="loginBtn">Masuk ke ruang pengurus <svg><use href="#i-arrow"/></svg></button>
       </form>
-    </section>
+      <p class="login-help">Akun dikelola oleh admin utama DKM. Hubungi pengelola jika lupa password.</p>
+      <a href="./index.html" class="text-link">Kembali ke website masjid <svg><use href="#i-arrow"/></svg></a>
+    </div></div>
+  </section>
 
-    <div id="adminPanel" hidden>
-    <section class="card">
-      <h2 id="formTitle">Tambah kegiatan</h2>
-      <form id="kegiatanForm">
-        <input type="hidden" id="fId" />
-        <label>Judul kegiatan
-          <input id="fTitle" required maxlength="200" placeholder="cth: Kajian Rutin Pekanan" />
-        </label>
-        <div class="row">
-          <label>Kategori
-            <select id="fCategory">
-              <option>Kajian</option>
-              <option>Idul Fitri</option>
-              <option>Idul Adha</option>
-              <option>Remaja</option>
-              <option>Sosial</option>
-            </select>
-          </label>
-          <label>Tanggal <span class="hint">(boleh kosong untuk program rutin)</span>
-            <input id="fDate" type="date" />
-          </label>
-        </div>
-        <label>Deskripsi
-          <textarea id="fDesc" maxlength="1000" placeholder="Deskripsi singkat kegiatan&hellip;"></textarea>
-        </label>
-        <label>URL foto <span class="hint">(boleh kosong; isi dengan URL gambar, mis. dari Supabase Storage)</span>
-          <input id="fImage" type="url" placeholder="https://&hellip;" />
-        </label>
-        <div class="actions">
-          <button type="submit" class="btn-green" id="submitBtn">Simpan kegiatan</button>
-          <button type="button" class="btn-line" id="resetBtn">Batal / form baru</button>
-        </div>
-      </form>
-    </section>
-
-    <section class="card">
-      <h2>Daftar kegiatan (<span id="count">0</span>)</h2>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Kegiatan</th><th>Tanggal</th><th>Aksi</th></tr></thead>
-          <tbody id="list"><tr><td colspan="3" class="empty">Memuat&hellip;</td></tr></tbody>
-        </table>
-      </div>
-    </section>
+  <div class="app-shell" id="appShell" hidden>
+    <button class="sidebar-shade" id="sidebarShade" aria-label="Tutup navigasi" hidden></button>
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="./index.html"><span class="brand-mark"><svg><use href="#i-mosque"/></svg></span><span>Ash Shulaha<small>RUANG PENGURUS</small></span></a>
+      <span class="sidebar-label">KELOLA WEBSITE</span>
+      <nav class="side-nav" aria-label="Navigasi admin">
+        <button type="button" data-view="dashboard" class="active"><svg><use href="#i-grid"/></svg>Dashboard<span class="nav-indicator"></span></button>
+        <button type="button" data-view="kegiatan"><svg><use href="#i-calendar"/></svg>Kegiatan<span class="nav-count" id="navActivityCount">0</span></button>
+        <button type="button" data-view="organisasi"><svg><use href="#i-users"/></svg>Organisasi</button>
+        <button type="button" data-view="pengumuman"><svg><use href="#i-megaphone"/></svg>Pengumuman</button>
+        <span class="sidebar-label">INFORMASI MASJID</span>
+        <button type="button" data-view="profil"><svg><use href="#i-home"/></svg>Profil &amp; Kontak</button>
+        <button type="button" data-view="donasi"><svg><use href="#i-heart"/></svg>Donasi &amp; Infak</button>
+      </nav>
+      <div class="sidebar-bottom"><div class="sidebar-note"><svg><use href="#i-heart"/></svg><p>Setiap kabar baik,<br /><strong>menyambung ukhuwah.</strong></p></div><a class="website-link" href="./index.html" target="_blank" rel="noopener">Lihat website <svg><use href="#i-arrow"/></svg></a><div class="sidebar-user"><span class="avatar" id="userInitial">A</span><span class="user-info"><strong>Pengurus DKM</strong><small id="userEmail"></small></span><button type="button" class="icon-button" id="logoutBtn" aria-label="Keluar"><svg><use href="#i-logout"/></svg></button></div></div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar"><div class="breadcrumb"><button type="button" class="icon-button mobile-toggle" id="menuBtn" aria-label="Buka navigasi" aria-expanded="false" aria-controls="sidebar"><svg><use href="#i-menu"/></svg></button><span>Ruang Pengurus</span><span class="breadcrumb-slash">/</span><strong id="breadcrumbTitle">Dashboard</strong></div><div class="topbar-right"><span class="connection" id="connection"><span class="live-dot"></span>Memuat data</span><span class="topbar-divider"></span><span class="topbar-date" id="todayLabel"></span></div></header>
+      <main class="main-content" id="mainContent" tabindex="-1">
+        <div id="setupNotice" class="notice error" role="alert" hidden></div>
+        <section id="view-dashboard" class="view"></section>
+        <section id="view-kegiatan" class="view" hidden></section>
+        <section id="view-organisasi" class="view" hidden></section>
+        <section id="view-pengumuman" class="view" hidden></section>
+        <section id="view-profil" class="view" hidden></section>
+        <section id="view-donasi" class="view" hidden></section>
+        <footer class="workspace-footer"><span>Masjid Ash Shulaha · Ruang Pengurus</span><span>Dari masjid, untuk umat.</span></footer>
+      </main>
     </div>
-  </main>
+  </div>
 
+  <dialog id="editorDialog" class="editor-dialog" aria-labelledby="editorTitle"><form id="editorForm"><header class="dialog-header"><div><span class="eyebrow" id="editorEyebrow">KELOLA KONTEN</span><h2 id="editorTitle"></h2></div><button type="button" class="icon-button" data-close-editor aria-label="Tutup form"><svg><use href="#i-close"/></svg></button></header><div class="dialog-body" id="editorBody"></div><div class="notice error dialog-error" id="editorError" role="alert" hidden></div><footer class="dialog-footer"><button type="button" class="button secondary" data-close-editor>Batal</button><div class="button-group"><button type="button" class="button secondary" id="previewBtn"><svg><use href="#i-eye"/></svg>Pratinjau</button><button type="submit" class="button primary" id="saveBtn">Simpan perubahan</button></div></footer></form></dialog>
+  <dialog id="previewDialog" class="preview-dialog" aria-labelledby="previewTitle"><header class="dialog-header"><div><span class="eyebrow">PRATINJAU KONTEN</span><h2 id="previewTitle">Tampilan untuk jamaah</h2></div><button type="button" class="icon-button" id="closePreview" aria-label="Tutup pratinjau"><svg><use href="#i-close"/></svg></button></header><div class="dialog-body" id="previewBody"></div></dialog>
+  <dialog id="confirmDialog" class="confirm-dialog" aria-labelledby="confirmTitle"><form method="dialog"><span class="confirm-icon"><svg><use href="#i-trash"/></svg></span><h2 id="confirmTitle">Hapus data ini?</h2><p id="confirmText"></p><div class="button-group"><button class="button secondary" value="cancel">Batal</button><button class="button danger" value="confirm" id="confirmAction">Ya, hapus</button></div></form></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./config.js"></script>
-  <script>
-    "use strict";
-    var $ = function (s) { return document.querySelector(s); };
-    var statusEl = $("#status"), listEl = $("#list"), countEl = $("#count");
-    var form = $("#kegiatanForm");
-    var client = null;
-
-    function esc(s) {
-      return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
-        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
-      });
-    }
-    function setStatus(msg, kind) {
-      statusEl.textContent = msg;
-      statusEl.className = "status" + (kind ? " " + kind : "");
-    }
-    function fmtDate(d) {
-      if (!d) return "Program rutin";
-      try {
-        return new Intl.DateTimeFormat("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date(d + "T00:00:00"));
-      } catch (e) { return d; }
-    }
-
-    var cfg = window.SUPABASE_CONFIG || {};
-    var loginCard = $("#loginCard"), adminPanel = $("#adminPanel"), logoutBtn = $("#logoutBtn");
-    var loginError = $("#loginError"), loginBtn = $("#loginBtn");
-
-    function showLoginError(msg) {
-      loginError.textContent = msg;
-      loginError.hidden = false;
-    }
-    function showLogin(msg) {
-      loginCard.hidden = false;
-      adminPanel.hidden = true;
-      logoutBtn.hidden = true;
-      if (msg) setStatus(msg);
-      else setStatus("Silakan login dengan akun admin untuk mengelola kegiatan.");
-    }
-    function showPanel(email) {
-      loginCard.hidden = true;
-      adminPanel.hidden = false;
-      logoutBtn.hidden = false;
-      loginError.hidden = true;
-      loadList(email);
-    }
-    function checkSession() {
-      client.auth.getSession().then(function (res) {
-        if (res.error) { showLogin("Gagal memeriksa sesi login: " + res.error.message); return; }
-        var session = res.data && res.data.session;
-        if (session && session.user) showPanel(session.user.email);
-        else showLogin();
-      }).catch(function (err) {
-        showLogin("Gagal memeriksa sesi login: " + (err && err.message ? err.message : err));
-      });
-    }
-
-    if (!cfg.url || !cfg.anonKey || cfg.anonKey.indexOf("ISI_") === 0) {
-      setStatus("Supabase belum dikonfigurasi: isi anonKey di config.js (lokal) atau set env var SUPABASE_URL dan SUPABASE_ANON_KEY di Vercel lalu deploy ulang.", "err");
-      listEl.innerHTML = '<tr><td colspan="3" class="empty">Konfigurasi Supabase belum diisi.</td></tr>';
-    } else if (!window.supabase) {
-      setStatus("Library Supabase gagal dimuat (periksa koneksi internet).", "err");
-    } else {
-      client = window.supabase.createClient(cfg.url, cfg.anonKey);
-      client.auth.onAuthStateChange(function (event, session) {
-        if (event === "SIGNED_IN" && session && session.user) showPanel(session.user.email);
-        else if (event === "SIGNED_OUT") showLogin("Anda sudah keluar. Silakan login kembali.");
-      });
-      checkSession();
-    }
-
-    $("#loginForm").addEventListener("submit", function (e) {
-      e.preventDefault();
-      if (!client) { showLoginError("Supabase belum dikonfigurasi."); return; }
-      var email = $("#loginEmail").value.trim();
-      var password = $("#loginPassword").value;
-      if (!email || !password) { showLoginError("Email dan password wajib diisi."); return; }
-      loginBtn.disabled = true;
-      loginBtn.textContent = "Memeriksa\u2026";
-      loginError.hidden = true;
-      client.auth.signInWithPassword({ email: email, password: password }).then(function (res) {
-        loginBtn.disabled = false;
-        loginBtn.textContent = "Masuk";
-        if (res.error) {
-          showLoginError("Login gagal: email atau password salah. Periksa kembali dan coba lagi.");
-          return;
-        }
-        $("#loginPassword").value = "";
-        if (res.data && res.data.session && res.data.session.user) showPanel(res.data.session.user.email);
-      }).catch(function (err) {
-        loginBtn.disabled = false;
-        loginBtn.textContent = "Masuk";
-        showLoginError("Login gagal: " + (err && err.message ? err.message : err));
-      });
-    });
-
-    logoutBtn.addEventListener("click", function () {
-      if (!client) return;
-      client.auth.signOut().then(function () { showLogin("Anda sudah keluar. Silakan login kembali."); });
-    });
-
-    function loadList(email) {
-      setStatus("Memuat kegiatan dari Supabase\u2026");
-      client.from("kegiatan").select("id,title,description,category,event_date,image_url,created_at")
-        .order("event_date", { ascending: false, nullsFirst: false })
-        .order("created_at", { ascending: false })
-        .then(function (res) {
-          if (res.error) {
-            setStatus("Gagal memuat: " + res.error.message + " (pastikan schema.sql sudah dijalankan di Supabase SQL Editor).", "err");
-            listEl.innerHTML = '<tr><td colspan="3" class="empty">Gagal memuat data.</td></tr>';
-            return;
-          }
-          var rows = res.data || [];
-          countEl.textContent = String(rows.length);
-          setStatus("Login sebagai " + (email || "admin") + ". Terhubung ke Supabase. " + rows.length + " kegiatan dimuat. Perubahan di sini langsung tampil di website.", "ok");
-          if (!rows.length) {
-            listEl.innerHTML = '<tr><td colspan="3" class="empty">Belum ada kegiatan. Tambahkan lewat form di atas, atau jalankan seed.sql.</td></tr>';
-            return;
-          }
-          listEl.innerHTML = rows.map(function (r) {
-            return "<tr><td><strong>" + esc(r.title) + '</strong> <span class="cat">' + esc(r.category) + "</span>" +
-              (r.description ? '<span class="desc">' + esc(r.description) + "</span>" : "") +
-              "</td><td>" + esc(fmtDate(r.event_date)) + "</td>" +
-              '<td><button type="button" class="btn-edit" data-edit="' + esc(r.id) + '">Ubah</button> ' +
-              '<button type="button" class="btn-red" data-del="' + esc(r.id) + '">Hapus</button></td></tr>';
-          }).join("");
-          listEl.querySelectorAll("[data-edit]").forEach(function (b) {
-            b.addEventListener("click", function () { startEdit(b.getAttribute("data-edit")); });
-          });
-          listEl.querySelectorAll("[data-del]").forEach(function (b) {
-            b.addEventListener("click", function () { removeRow(b.getAttribute("data-del")); });
-          });
-          window._rows = rows;
-        })
-        .catch(function (err) {
-          setStatus("Gagal memuat: " + (err && err.message ? err.message : err), "err");
-        });
-    }
-
-    function startEdit(id) {
-      var rows = window._rows || [];
-      var r = null;
-      rows.forEach(function (x) { if (String(x.id) === String(id)) r = x; });
-      if (!r) return;
-      $("#fId").value = r.id;
-      $("#fTitle").value = r.title || "";
-      $("#fCategory").value = r.category || "Kajian";
-      $("#fDate").value = r.event_date || "";
-      $("#fDesc").value = r.description || "";
-      $("#fImage").value = r.image_url || "";
-      $("#formTitle").textContent = "Ubah kegiatan";
-      $("#submitBtn").textContent = "Simpan perubahan";
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      $("#fTitle").focus();
-    }
-
-    function removeRow(id) {
-      var rows = window._rows || [];
-      var r = null;
-      rows.forEach(function (x) { if (String(x.id) === String(id)) r = x; });
-      if (!confirm("Yakin mau hapus kegiatan \"" + (r ? r.title : id) + "\"?")) return;
-      client.from("kegiatan").delete().eq("id", id).then(function (res) {
-        if (res.error) { alert("Gagal menghapus: " + res.error.message); return; }
-        loadList();
-      });
-    }
-
-    function resetForm() {
-      form.reset();
-      $("#fId").value = "";
-      $("#formTitle").textContent = "Tambah kegiatan";
-      $("#submitBtn").textContent = "Simpan kegiatan";
-    }
-    $("#resetBtn").addEventListener("click", resetForm);
-
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
-      if (!client) { alert("Supabase belum dikonfigurasi."); return; }
-      var payload = {
-        title: $("#fTitle").value.trim(),
-        category: $("#fCategory").value,
-        event_date: $("#fDate").value || null,
-        description: $("#fDesc").value.trim() || null,
-        image_url: $("#fImage").value.trim() || null
-      };
-      if (!payload.title) { alert("Judul kegiatan wajib diisi."); return; }
-      var id = $("#fId").value;
-      var q = id
-        ? client.from("kegiatan").update(payload).eq("id", id)
-        : client.from("kegiatan").insert(payload);
-      setStatus("Menyimpan\u2026");
-      q.then(function (res) {
-        if (res.error) { setStatus("Gagal menyimpan: " + res.error.message, "err"); return; }
-        resetForm();
-        loadList();
-      }).catch(function (err) {
-        setStatus("Gagal menyimpan: " + (err && err.message ? err.message : err), "err");
-      });
-    });
-  </script>
+  <script src="./content-defaults.js"></script>
+  <script src="./admin.js"></script>
 </body>
 </html>
