@@ -18,7 +18,8 @@
   }
   function addNav(label, anchor) {
     if ($(`#footNav [data-content-anchor="${anchor}"]`)) return;
-    const button = document.createElement("button"); button.type = "button"; button.textContent = label; button.dataset.contentAnchor = anchor;
+    const button = document.createElement("button"); button.type = "button"; button.dataset.contentAnchor = anchor;
+    const text = document.createElement("span"); text.textContent = label; button.append(text);
     button.addEventListener("click",() => window.goHome(anchor)); $("#footNav").append(button);
   }
   function renderProfile(raw) {
