@@ -11,6 +11,27 @@
   const state = { user: null, view: "dashboard", activities: [], announcements: [], groups: [], members: [], settings: null, ready: {}, errors: [], busy: false, uploads: 0, loading: false };
   let client, editor = null, editorDirty = false, settingsDirty = new Set(), toastTimer, authVersion = 0;
   const defaults = window.MASJID_DEFAULTS;
+  // Logo PNG dihasilkan saat build dari gambar pada navbar homepage.
+  // Bila halaman dibuka lewat static server lokal tanpa build, ambil logo dari HTML homepage.
+  function loadBrandLogo() {
+    const apply = (src) => {
+      if (!src) return;
+      $$(".brand-logo").forEach(img => {
+        img.addEventListener("load", () => { img.hidden = false; $(".brand-fallback", img.parentElement).hidden = true; }, { once: true });
+        img.addEventListener("error", () => { img.hidden = true; }, { once: true });
+        img.src = src;
+      });
+    };
+    fetch("./masjid-logo.png", { cache: "force-cache" }).then(response => {
+      if (!response.ok) throw new Error("Logo hasil build tidak tersedia");
+      return response.blob();
+    }).then(blob => apply(URL.createObjectURL(blob))).catch(() => {
+      fetch("./index.html", { cache: "force-cache" }).then(response => response.text()).then(html => {
+        const homepage = new DOMParser().parseFromString(html, "text/html");
+        apply(homepage.querySelector("button.brand img[src^='data:image/png;base64,']")?.src);
+      }).catch(() => {});
+    });
+  }
   const fmtDate = (date, withTime = false) => {
     if (!date) return "Program rutin";
     const value = new Date(date.length === 10 ? date + "T00:00:00+07:00" : date);
@@ -376,6 +397,7 @@
   $("#closePreview").addEventListener("click", () => $("#previewDialog").close());
   window.addEventListener("beforeunload",e => { if (editorDirty || settingsDirty.size || state.uploads || state.busy) { e.preventDefault(); e.returnValue = ""; } });
   $("#todayLabel").textContent = new Intl.DateTimeFormat("id-ID",{timeZone:"Asia/Jakarta",day:"numeric",month:"long",year:"numeric"}).format(new Date());
+  loadBrandLogo();
   async function init() {
     const cfg = window.SUPABASE_CONFIG || {};
     try {

@@ -1,0 +1,119 @@
+/* Identitas dan keterbacaan Ruang Pengurus selaras dengan website masjid. */
+:root {
+  --bg: #f2f7f3;
+  --surface: #fff;
+  --ink: #101410;
+  --muted: #5b665c;
+  --line: #e2eae3;
+  --green: #063d1e;
+  --deep: #063d1e;
+  --accent-deep: #075e2c;
+  --accent-ink: #063d1e;
+  --mint: #e9f9ec;
+  --lime: #e9f9ec;
+  --accent: #075e2c;
+  --red: #a82f2f;
+}
+
+body { font-size: 14px; }
+.brand-mark { background: #fff; border-color: #e2eae3; color: var(--accent-deep); width: 46px; height: 46px; padding: 4px; }
+.brand-logo { display: block; width: 100%; height: 100%; object-fit: contain; }
+.brand-fallback { display: block; }
+.brand { gap: 11px; font-size: 19px; }
+.brand small { color: #d1e3d3; font-size: 9px; letter-spacing: .15em; }
+.sidebar .brand-mark { border-color: #cde5d0; }
+
+.sidebar-label { font-size: 10px; color: #a9c7ae; }
+.side-nav > button { min-height: 48px; font-size: 13px; }
+.side-nav > button svg { width: 19px; height: 19px; }
+.nav-count { font-size: 11px; }
+.sidebar-note p { font-size: 12px; }
+.website-link { font-size: 12px; }
+.user-info strong { font-size: 12px; }
+.user-info small { font-size: 10px; }
+.topbar .breadcrumb { font-size: 12px; }
+.connection, .topbar-date { font-size: 11px; }
+.main-content { font-size: 14px; }
+.eyebrow { font-size: 11px; letter-spacing: .14em; }
+.page-heading h1 { font-size: 34px; }
+.page-heading p { font-size: 13px; }
+.page-heading .eyebrow { font-size: 10px; }
+.button { font-size: 13px; min-height: 44px; }
+.welcome-content .eyebrow { font-size: 10px; }
+.welcome-content p { font-size: 13px; }
+.welcome-content .button { min-height: 40px; font-size: 12px; }
+.stat-top { font-size: 12px; }
+.stat-foot { font-size: 11px; }
+.card-header h2 { font-size: 15px; }
+.card-header p { font-size: 12px; }
+.card-header .text-link { font-size: 12px; }
+.recent-item h3 { font-size: 13px; }
+.recent-item p { font-size: 11px; }
+.quick-action strong { font-size: 12px; }
+.quick-action small { font-size: 11px; }
+.tip-card .eyebrow { font-size: 10px; }
+.tip-card p { font-size: 12px; }
+.tip-card .text-link { font-size: 12px; }
+.toolbar { gap: 16px; }
+.search-field input, .filter-select { font-size: 13px; }
+th { font-size: 10px; }
+td { font-size: 13px; }
+.content-cell strong { font-size: 13px; }
+.content-cell small { font-size: 11px; }
+.badge { font-size: 10px; }
+.list-footer { font-size: 11px; }
+.empty-state h3 { font-size: 15px; }
+.empty-state p { font-size: 13px; }
+.form-section-title { font-size: 15px; }
+.form-section-note, .settings-footer p { font-size: 12px; }
+label { font-size: 13px; }
+input:not([type=checkbox]), select, textarea { font-size: 14px; min-height: 46px; }
+.hint { font-size: 11px; }
+.checkbox-label { font-size: 13px; }
+.settings-aside h3 { font-size: 14px; }
+.settings-aside p, .settings-aside li { font-size: 12px; }
+.section-heading h2 { font-size: 17px; }
+.section-heading p { font-size: 12px; }
+.org-card .card-header h3 { font-size: 14px; }
+.org-type { font-size: 10px; }
+.org-member strong { font-size: 12px; }
+.org-member small, .org-card-footer { font-size: 11px; }
+.org-card-footer .button { font-size: 11px; }
+.audit { font-size: 11px; }
+.upload-state, .upload-or { font-size: 11px; }
+.dialog-header .eyebrow { font-size: 10px; }
+.dialog-body { font-size: 14px; }
+.preview-content p { font-size: 14px; }
+.preview-content time { font-size: 12px; }
+.confirm-dialog p { font-size: 14px; }
+.toast { font-size: 13px; }
+.workspace-footer { font-size: 11px; }
+
+@media (max-width: 1199px) {
+  .page-heading h1 { font-size: 31px; }
+}
+@media (max-width: 700px) {
+  .brand { font-size: 17px; }
+  .brand small { font-size: 8px; }
+  .side-nav > button { font-size: 14px; min-height: 50px; }
+  .main-content { font-size: 14px; }
+  .page-heading h1 { font-size: 29px; }
+  .page-heading p { font-size: 12px; }
+  .page-heading > .button { font-size: 11px; }
+  .welcome-content .eyebrow { font-size: 9px; }
+  .welcome-content p { font-size: 12px; max-width: 255px; }
+  .welcome-content .button { font-size: 11px; }
+  .stat-top { font-size: 11px; }
+  .stat-foot { font-size: 10px; }
+  .card-header h2 { font-size: 14px; }
+  .recent-item h3 { font-size: 12px; }
+  .recent-item p { font-size: 10px; }
+  .quick-action strong { font-size: 12px; }
+  .quick-action small { font-size: 10px; }
+  .section-heading h2 { font-size: 15px; }
+  .section-heading p { font-size: 11px; }
+  .settings-card, .org-settings { padding: 18px; }
+  .dialog-body { font-size: 14px; }
+  .dialog-footer .button { font-size: 11px; }
+  .optional-column { display: none; }
+}

@@ -58,7 +58,7 @@ Import repository di Vercel, pilih Framework **Other**, lalu atur:
 | `SUPABASE_URL` | URL proyek Supabase |
 | `SUPABASE_ANON_KEY` | Publishable key / anon key proyek |
 
-`vercel.json` menjalankan `node build-config.js` untuk membuat konfigurasi browser. Setelah mengganti environment variable, deploy ulang.
+`vercel.json` menjalankan `node build-config.js` untuk membuat konfigurasi browser dan mengekstrak logo homepage menjadi `masjid-logo.png` untuk admin. Setelah mengganti environment variable, deploy ulang.
 
 ## Penggunaan admin
 
@@ -86,9 +86,9 @@ Import repository di Vercel, pilih Framework **Other**, lalu atur:
 | --- | --- |
 | `index.html` | Website publik, navigasi, kegiatan, jadwal sholat, dan konten bawaan |
 | `site-content.js` | Integrasi publik untuk profil, organisasi, pengumuman, dan donasi |
-| `admin.html`, `admin.css`, `admin.js` | Login, dashboard, dan pengelolaan konten |
+| `admin.html`, `admin.css`, `admin-theme.css`, `admin.js` | Login, dashboard, dan pengelolaan konten |
 | `content-defaults.js` | Nilai awal profil/periode/donasi yang dipakai bersama |
 | `schema.sql` | Skema, migrasi, RLS, audit, dan bucket gambar |
 | `seed.sql` | Data kegiatan dan organisasi awal |
-| `config.js`, `build-config.js` | Konfigurasi Supabase browser dan build |
+| `config.js`, `build-config.js` | Konfigurasi Supabase browser dan build; logo admin diekstrak saat build |
 | `vercel.json` | Konfigurasi deployment |
