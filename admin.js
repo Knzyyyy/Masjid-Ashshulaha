@@ -137,6 +137,12 @@
   function imagePicker(name, value, label = "Foto kegiatan") {
     return `<div class="image-picker"><img class="image-preview" data-image-preview="${name}" alt="Pratinjau gambar" ${safeUrl(value) ? `src="${esc(safeUrl(value))}"` : "hidden"} /><label>${label}<input type="file" accept="image/jpeg,image/png,image/webp" data-upload="${name}" /><span class="hint">JPG, PNG, atau WebP. Maksimal 5 MB.</span></label><span class="upload-state" data-upload-state="${name}" role="status"></span><p class="upload-or">Atau gunakan tautan gambar yang sudah tersedia</p>${field(name, "URL gambar", value, {type:"url",hint:"Kosongkan URL untuk menghapus gambar dari konten."})}</div>`;
   }
+  function activityImagePicker(row) {
+    const images = Array.isArray(row.image_urls) ? row.image_urls.filter(url => safeUrl(url)) : [];
+    const legacy = safeUrl(row.image_url);
+    if (legacy && !images.includes(legacy)) images.unshift(legacy);
+    return `<div class="image-picker activity-image-picker"><label>Foto kegiatan<input type="file" accept="image/jpeg,image/png,image/webp" data-upload="activity_images" multiple /><span class="hint">Pilih beberapa JPG, PNG, atau WebP sekaligus. Maksimal 8 foto, masing-masing 5 MB.</span></label><span class="upload-state" data-upload-state="activity_images" role="status"></span><div class="activity-image-list" data-activity-image-list>${images.map((url,index) => `<div class="activity-image-item"><img src="${esc(url)}" alt="Pratinjau foto ${index + 1}" /><button type="button" class="button secondary" data-remove-activity-image="${index}" aria-label="Hapus foto ${index + 1}">Hapus</button></div>`).join("")}</div><input type="hidden" name="image_urls" value="${esc(JSON.stringify(images))}" />${field("image_url","Atau tambahkan URL foto",legacy,{type:"url",hint:"URL ini ikut masuk sebagai salah satu foto. Kosongkan untuk menghapus URL lama."})}</div>`;
+  }
   function renderOrganization() {
     const org = settings("organization");
     $("#view-organisasi").innerHTML = heading("KEPENGURUSAN DKM", "Organisasi masjid", "Kelola susunan pengurus, kelompok, dan periode kepengurusan.") +
@@ -211,7 +217,7 @@
     $("#saveBtn").textContent = id ? "Simpan perubahan" : "Simpan " + ({activity:"kegiatan",announcement:"pengumuman",group:"kelompok",member:"pengurus"}[type]);
     $("#editorError").hidden = true;
     let html = "";
-    if (type === "activity") html = field("title","Judul kegiatan",r.title,{required:true,max:200}) + `<div class="form-row">${field("category","Kategori",r.category || "Kajian",{choices:categories})}${field("event_date","Tanggal kegiatan",r.event_date,{type:"date",hint:"Boleh kosong untuk program rutin."})}</div>` + field("description","Deskripsi",r.description,{textarea:true,max:3000}) + imagePicker("image_url",r.image_url) + field("status","Status konten",r.status || "draft",{choices:[["draft","Draft — simpan dulu"],["published","Terbit — tampil di website"],["archived","Arsip — sembunyikan dari website"]]});
+    if (type === "activity") html = field("title","Judul kegiatan",r.title,{required:true,max:200}) + `<div class="form-row">${field("category","Kategori",r.category || "Kajian",{choices:categories})}${field("event_date","Tanggal kegiatan",r.event_date,{type:"date",hint:"Boleh kosong untuk program rutin."})}</div>` + field("description","Deskripsi",r.description,{textarea:true,max:3000}) + activityImagePicker(r) + field("status","Status konten",r.status || "draft",{choices:[["draft","Draft — simpan dulu"],["published","Terbit — tampil di website"],["archived","Arsip — sembunyikan dari website"]]});
     if (type === "announcement") html = field("title","Judul pengumuman",r.title,{required:true,max:200}) + field("body","Isi pengumuman",r.body,{textarea:true,required:true,max:5000}) + `<div class="form-row">${field("start_date","Mulai tayang",r.start_date,{type:"date",hint:"Kosong berarti langsung tayang saat diterbitkan."})}${field("end_date","Akhir tayang",r.end_date,{type:"date",hint:"Kosong berarti tanpa batas akhir."})}</div>` + checkbox("pinned","Sematkan di urutan paling atas",r.pinned) + field("status","Status konten",r.status || "draft",{choices:[["draft","Draft — simpan dulu"],["published","Terbit — sesuai masa tayang"],["archived","Arsip — sembunyikan dari website"]]});
     if (type === "group") html = field("name","Nama kelompok",r.name,{required:true,max:150,placeholder:"Contoh: Seksi Pendidikan"}) + `<div class="form-row">${field("kind","Jenis kelompok",r.kind || "section",{choices:Object.entries(kinds)})}${field("position","Urutan tampil",r.position ?? state.groups.length + 1,{type:"number",required:true,min:0,step:1})}</div><div class="notice info">Ketua DKM hanya dapat ditetapkan pada anggota kelompok Pengurus inti.</div>`;
     if (type === "member") html = field("name","Nama pengurus",r.name,{required:true,max:150}) + field("role","Jabatan / peran",r.role,{max:150,placeholder:"Contoh: Ketua, Bendahara, atau Anggota"}) + `<div class="form-row">${field("group_id","Kelompok",r.group_id || groupId,{choices:state.groups.map(g => [g.id,g.name]),required:true})}${field("position","Urutan dalam kelompok",r.position ?? state.members.filter(m => m.group_id === groupId).length + 1,{type:"number",required:true,min:0,step:1})}</div>` + checkbox("is_chair","Tetapkan sebagai Ketua DKM",r.is_chair,"Tampil paling atas di bagan. Hanya satu Ketua DKM yang aktif.");
@@ -236,8 +242,18 @@
       const p = cleanStrings(formPayload(event.target)), type = editor.type;
       if (type === "activity") {
         if (!p.title) throw new Error("Judul kegiatan wajib diisi.");
-        p.event_date ||= null; p.image_url ||= null; p.description ||= null;
-        if (p.image_url && !safeUrl(p.image_url)) throw new Error("URL gambar harus diawali https:// atau http://.");
+        p.event_date ||= null; p.description ||= null;
+        let images;
+        try { images = JSON.parse(p.image_urls || "[]"); } catch { throw new Error("Daftar foto tidak valid. Muat ulang form lalu pilih kembali fotonya."); }
+        if (!Array.isArray(images)) throw new Error("Daftar foto tidak valid.");
+        images = images.map(safeUrl).filter(Boolean);
+        if (p.image_url) {
+          const manualImage = safeUrl(p.image_url);
+          if (!manualImage) throw new Error("URL gambar harus diawali https:// atau http://.");
+          if (!images.includes(manualImage)) images.unshift(manualImage);
+        }
+        if (images.length > 8) throw new Error("Maksimal 8 foto untuk setiap kegiatan.");
+        p.image_urls = images; p.image_url = images[0] || null;
       }
       if (type === "announcement") {
         if (!p.title || !p.body) throw new Error("Judul dan isi pengumuman wajib diisi.");
@@ -300,19 +316,38 @@
     finally { state.busy = false; btn.disabled = false; btn.textContent = text; }
   }
   async function upload(input) {
-    const file = input.files[0]; if (!file || !state.user) return;
+    const files = Array.from(input.files || []); if (!files.length || !state.user) return;
     const container = input.closest("form"), name = input.dataset.upload, status = $(`[data-upload-state="${name}"]`,container);
     const extensions = {"image/jpeg":"jpg","image/png":"png","image/webp":"webp"};
-    if (!extensions[file.type] || file.size > 5 * 1024 * 1024) { status.textContent = "Pilih JPG, PNG, atau WebP dengan ukuran maksimal 5 MB."; input.value = ""; return; }
-    state.uploads++; input.disabled = true; status.textContent = "Mengupload gambar…";
+    if (files.some(file => !extensions[file.type] || file.size > 5 * 1024 * 1024)) { status.textContent = "Setiap foto harus JPG, PNG, atau WebP dengan ukuran maksimal 5 MB."; input.value = ""; return; }
+    if (name === "activity_images") {
+      let current = []; try { current = JSON.parse($('[name="image_urls"]',container).value || "[]"); } catch {}
+      if (current.length + files.length > 8) { status.textContent = "Maksimal 8 foto untuk setiap kegiatan."; input.value = ""; return; }
+    }
+    state.uploads++; input.disabled = true; status.textContent = files.length > 1 ? `Mengupload ${files.length} foto…` : "Mengupload gambar…";
     $$("button[type=submit]",container).forEach(b => { b.disabled = true; });
     try {
-      const path = `${state.user.id}/${crypto.randomUUID()}.${extensions[file.type]}`;
-      throwError(await client.storage.from("masjid-media").upload(path,file,{cacheControl:"3600",upsert:false,contentType:file.type}));
-      const url = client.storage.from("masjid-media").getPublicUrl(path).data.publicUrl;
-      $(`[name="${name}"]`,container).value = url;
-      const preview = $(`[data-image-preview="${name}"]`,container); preview.src = url; preview.hidden = false;
-      status.textContent = "Gambar terupload. Simpan form untuk menerapkan perubahan.";
+      const uploaded = [];
+      for (const file of files) {
+        const path = `${state.user.id}/${crypto.randomUUID()}.${extensions[file.type]}`;
+        throwError(await client.storage.from("masjid-media").upload(path,file,{cacheControl:"3600",upsert:false,contentType:file.type}));
+        const url = client.storage.from("masjid-media").getPublicUrl(path).data.publicUrl;
+        uploaded.push(url);
+        if (name === "activity_images") {
+          const hidden = $('[name="image_urls"]',container), urls = [...JSON.parse(hidden.value || "[]"), url];
+          hidden.value = JSON.stringify(urls);
+          $(`[data-activity-image-list]`,container).innerHTML = urls.map((image,index) => `<div class="activity-image-item"><img src="${esc(image)}" alt="Pratinjau foto ${index + 1}" /><button type="button" class="button secondary" data-remove-activity-image="${index}" aria-label="Hapus foto ${index + 1}">Hapus</button></div>`).join("");
+          const primary = $('[name="image_url"]',container); if (!primary.value) primary.value = urls[0] || "";
+          editorDirty = true;
+        }
+      }
+      if (name === "activity_images") {
+        // Daftar dan pratinjau diperbarui per file agar upload parsial tidak hilang dari form.
+      } else {
+        $(`[name="${name}"]`,container).value = uploaded[0];
+        const preview = $(`[data-image-preview="${name}"]`,container); preview.src = uploaded[0]; preview.hidden = false;
+      }
+      status.textContent = name === "activity_images" ? `${uploaded.length} foto terupload. Simpan form untuk menerapkan perubahan.` : "Gambar terupload. Simpan form untuk menerapkan perubahan.";
       if (container.dataset.settings) settingsDirty.add(container.dataset.settings); else editorDirty = true;
     } catch(error) { status.textContent = "Upload gagal: " + message(error); }
     finally { state.uploads--; input.disabled = false; input.value = ""; $$("button[type=submit]",container).forEach(b => { b.disabled = false; }); }
@@ -363,6 +398,16 @@
   $("#sidebarShade").addEventListener("click", () => setSidebar(false));
   document.addEventListener("keydown", e => { if (e.key === "Escape") setSidebar(false); });
   document.addEventListener("click", async e => {
+    const removePhoto = e.target.closest("[data-remove-activity-image]");
+    if (removePhoto) {
+      const form = removePhoto.closest("form"), hidden = $('[name="image_urls"]',form), index = Number(removePhoto.dataset.removeActivityImage);
+      let urls = []; try { urls = JSON.parse(hidden.value || "[]"); } catch {}
+      urls.splice(index,1); hidden.value = JSON.stringify(urls);
+      $(`[data-activity-image-list]`,form).innerHTML = urls.map((url,i) => `<div class="activity-image-item"><img src="${esc(url)}" alt="Pratinjau foto ${i + 1}" /><button type="button" class="button secondary" data-remove-activity-image="${i}" aria-label="Hapus foto ${i + 1}">Hapus</button></div>`).join("");
+      const primary = $('[name="image_url"]',form); if (primary.value && !urls.includes(safeUrl(primary.value))) primary.value = "";
+      editorDirty = true;
+      return;
+    }
     const button = e.target.closest("button"); if (!button || button.disabled) return;
     if (button.dataset.view) { if (state.busy || state.uploads) { toast("Tunggu proses selesai."); return; } navigate(button.dataset.view); }
     if (button.hasAttribute("data-close-editor")) closeEditor();

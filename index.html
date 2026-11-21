@@ -232,8 +232,25 @@
       }
       .act-card:hover { transform: translateY(-4px); box-shadow: 0 16px 36px rgba(6,61,30,.13); }
       .act-card .imgbox { position: relative; aspect-ratio: 16/10; overflow: hidden; background: var(--surface-alt); }
-      .act-card .imgbox img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s; }
-      .act-card:hover .imgbox img { transform: scale(1.05); }
+      .activity-gallery-trigger { position: absolute; inset: 0; display: block; width: 100%; height: 100%; padding: 0; border: 0; background: transparent; cursor: zoom-in; }
+      .activity-card-slide { position: absolute; inset: 0; display: block; }
+      .activity-card-slide[hidden] { display: none; }
+      .activity-card-slide img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s, opacity .35s; }
+      .act-card:hover .activity-card-slide img { transform: scale(1.04); }
+      .activity-photo-count { position: absolute; right: .75rem; bottom: .75rem; z-index: 2; border: 1px solid rgba(255,255,255,.45); border-radius: 999px; padding: .25rem .625rem; background: rgba(9,28,15,.72); color: #fff; font-size: 11px; font-weight: 700; backdrop-filter: blur(6px); }
+      .gallery-dialog { width: min(94vw, 900px); max-width: 900px; max-height: 92dvh; padding: 0; overflow: hidden; border: 1px solid rgba(255,255,255,.2); border-radius: 1.25rem; background: #09130d; color: #fff; box-shadow: 0 24px 80px rgba(0,0,0,.45); }
+      .gallery-dialog::backdrop { background: rgba(3,12,6,.82); backdrop-filter: blur(5px); }
+      .gallery-frame { position: relative; display: grid; min-height: 240px; height: min(72dvh, 680px); place-items: center; background: #09130d; }
+      .gallery-frame img { display: block; max-width: 100%; max-height: 100%; width: 100%; height: 100%; object-fit: contain; }
+      .gallery-close, .gallery-arrow { position: absolute; z-index: 2; display: grid; width: 44px; height: 44px; place-items: center; border: 1px solid rgba(255,255,255,.28); border-radius: 50%; background: rgba(0,0,0,.55); color: #fff; cursor: pointer; }
+      .gallery-close { top: .875rem; right: .875rem; font-size: 25px; line-height: 1; }
+      .gallery-arrow { top: 50%; transform: translateY(-50%); font-size: 25px; }
+      .gallery-prev { left: .875rem; }
+      .gallery-next { right: .875rem; }
+      .gallery-caption { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .875rem 1rem; font-size: 13px; }
+      .gallery-position { color: rgba(255,255,255,.72); font-variant-numeric: tabular-nums; }
+      .gallery-dialog.single-photo .gallery-arrow { display: none; }
+      @media (max-width: 520px) { .gallery-dialog { width: 100vw; max-width: none; max-height: 100dvh; border-radius: 0; } .gallery-frame { height: 76dvh; } .gallery-arrow { width: 40px; height: 40px; } }
       .act-card .imgbox .noimg { display: flex; height: 100%; align-items: center; justify-content: center; color: var(--accent); }
       .act-card .imgbox .noimg svg { width: 2.5rem; height: 2.5rem; }
       .act-tag {
@@ -406,26 +423,26 @@
       .kontak-card .go svg { width: 1rem; height: 1rem; }
 
       /* ---------- Footer ---------- */
-      footer.site-footer { border-top: 1px solid var(--border); background: #fff; }
-      .foot-main { display: flex; flex-direction: column; gap: 1.5rem; padding: 2.5rem 0; }
-      @media (min-width: 768px) { .foot-main { flex-direction: row; align-items: flex-start; justify-content: space-between; } }
-      .foot-brand { max-width: 24rem; }
+      footer.site-footer { border-top: 1px solid var(--border); background: linear-gradient(180deg, #f5faf6, #fff 78%); }
+      .foot-main { display: grid; grid-template-columns: 1fr; gap: 2rem; padding: 3rem 0; }
+      @media (min-width: 768px) { .foot-main { grid-template-columns: minmax(0,1.2fr) minmax(20rem,.8fr); align-items: start; gap: 3rem; padding: 3.5rem 0; } }
+      .foot-brand { max-width: 32rem; }
       .foot-brand .row { display: flex; align-items: center; gap: .625rem; }
       .foot-brand img { width: 2.5rem; height: 2.5rem; object-fit: contain; }
       .foot-brand .nm { font-family: var(--font-display); font-size: 20px; color: var(--accent-ink); }
       .foot-brand p { margin-top: .5rem; font-size: 14px; line-height: 1.6; color: var(--dim); }
-      .foot-social { margin-top: 1rem; display: flex; flex-wrap: wrap; gap: .5rem; }
+      .foot-social { margin-top: 1.25rem; display: flex; flex-wrap: wrap; gap: .5rem; }
       .foot-social a {
         display: inline-flex; align-items: center; gap: .375rem; border: 1px solid var(--border); border-radius: 999px;
         padding: .375rem .75rem; font-size: 13px; font-weight: 600; color: var(--accent-deep); text-decoration: none; transition: background .25s;
       }
       .foot-social a:hover { background: var(--mint); }
       .foot-social svg { width: 1rem; height: 1rem; }
-      .foot-nav { display: grid; grid-template-columns: 1fr 1fr; gap: .625rem 2.5rem; font-size: 14px; font-weight: 500; }
-      .foot-nav button { border: none; background: none; cursor: pointer; font: inherit; text-align: left; padding: .5rem 0; color: var(--text); }
-      @media (min-width: 640px) { .foot-nav button { padding: .25rem 0; } }
-      .foot-nav button:hover { color: var(--accent-deep); }
-      .foot-bottom { border-top: 1px solid var(--border); padding: 1rem 0; text-align: center; font-size: 12.5px; color: var(--dim); }
+      .foot-nav { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .25rem 1rem; font-size: 14px; font-weight: 500; }
+      @media (min-width: 768px) { .foot-nav { grid-template-columns: repeat(2,minmax(0,1fr)); gap: .25rem 2rem; } }
+      .foot-nav button { min-height: 42px; border: none; border-radius: .625rem; background: none; cursor: pointer; font: inherit; text-align: left; padding: .5rem .625rem; color: var(--text); transition: color .2s, background .2s; }
+      .foot-nav button:hover { color: var(--accent-deep); background: var(--mint); }
+      .foot-bottom { border-top: 1px solid var(--border); padding: 1.125rem 0; text-align: center; font-size: 12.5px; color: var(--dim); }
 
       /* ---------- Sejarah ---------- */
       .page-sec { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: #fff; }
@@ -1095,6 +1112,16 @@
       </div>
     </footer>
 
+    <dialog class="gallery-dialog" id="activityGallery" aria-label="Galeri foto kegiatan">
+      <div class="gallery-frame">
+        <img id="galleryImage" alt="" />
+        <button type="button" class="gallery-close" id="galleryClose" aria-label="Tutup galeri">×</button>
+        <button type="button" class="gallery-arrow gallery-prev" id="galleryPrev" aria-label="Foto sebelumnya">‹</button>
+        <button type="button" class="gallery-arrow gallery-next" id="galleryNext" aria-label="Foto berikutnya">›</button>
+      </div>
+      <div class="gallery-caption"><strong id="galleryTitle"></strong><span class="gallery-position" id="galleryPosition" aria-live="polite"></span></div>
+    </dialog>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./config.js"></script>
     <script src="./content-defaults.js"></script>
@@ -1354,7 +1381,44 @@
       var ICON_CAL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/></svg>';
       var ICON_CAM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4zM12 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/></svg>';
       var filterState = { kategori: "Semua", query: "" };
+      var cardSlideTimers = [];
 
+      var galleryImages = [], galleryIndex = 0, galleryTouchStart = null;
+      var galleryDialog = $("#activityGallery"), galleryImage = $("#galleryImage");
+      function showGalleryImage(index) {
+        if (!galleryImages.length) return;
+        galleryIndex = (index + galleryImages.length) % galleryImages.length;
+        galleryImage.src = galleryImages[galleryIndex];
+        galleryImage.alt = "Foto " + (galleryIndex + 1) + " dari " + galleryImages.length + " — " + $("#galleryTitle").textContent;
+        $("#galleryPosition").textContent = (galleryIndex + 1) + " / " + galleryImages.length;
+        galleryDialog.classList.toggle("single-photo", galleryImages.length < 2);
+      }
+      document.addEventListener("click", function (event) {
+        var trigger = event.target.closest(".activity-gallery-trigger");
+        if (trigger) {
+          galleryImages = $$('img',trigger).map(function (image) { return image.currentSrc || image.src; }).filter(Boolean);
+          if (!galleryImages.length) return;
+          $("#galleryTitle").textContent = $("h3",trigger.closest(".act-card")).textContent;
+          showGalleryImage(Number(trigger.dataset.currentSlide) || 0);
+          galleryDialog.showModal();
+          return;
+        }
+        if (event.target === galleryDialog) galleryDialog.close();
+      });
+      $("#galleryClose").addEventListener("click",function () { galleryDialog.close(); });
+      $("#galleryPrev").addEventListener("click",function () { showGalleryImage(galleryIndex - 1); });
+      $("#galleryNext").addEventListener("click",function () { showGalleryImage(galleryIndex + 1); });
+      galleryDialog.addEventListener("keydown",function (event) {
+        if (event.key === "ArrowLeft") { event.preventDefault(); showGalleryImage(galleryIndex - 1); }
+        if (event.key === "ArrowRight") { event.preventDefault(); showGalleryImage(galleryIndex + 1); }
+      });
+      galleryDialog.addEventListener("touchstart",function (event) { galleryTouchStart = event.changedTouches[0].clientX; },{passive:true});
+      galleryDialog.addEventListener("touchend",function (event) {
+        if (galleryTouchStart === null) return;
+        var delta = event.changedTouches[0].clientX - galleryTouchStart;
+        if (Math.abs(delta) > 45) showGalleryImage(galleryIndex + (delta < 0 ? 1 : -1));
+        galleryTouchStart = null;
+      },{passive:true});
       function formatTanggalKegiatan(tanggal) {
         return new Intl.DateTimeFormat("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
           .format(new Date(tanggal + "T00:00:00"));
@@ -1370,13 +1434,15 @@
         });
       }
       function kegiatanCard(k, index) {
-        var img = k.foto
-          ? '<img src="' + esc(k.foto) + '" alt="Foto kegiatan ' + esc(k.judul) + '" loading="lazy" />'
+        var images = Array.isArray(k.fotoList) ? k.fotoList.filter(Boolean) : [];
+        if (k.foto && images.indexOf(k.foto) === -1) images.unshift(k.foto);
+        var imageMarkup = images.length
+          ? '<button type="button" class="activity-gallery-trigger" aria-label="Buka galeri foto ' + esc(k.judul) + '">' + images.map(function (url,i) { return '<span class="activity-card-slide" data-card-slide' + (i ? ' hidden' : '') + '><img src="' + esc(url) + '" alt="Foto ' + (i + 1) + ' dari ' + images.length + ' — ' + esc(k.judul) + '" loading="lazy" /></span>'; }).join("") + (images.length > 1 ? '<span class="activity-photo-count" data-card-photo-count>1 / ' + images.length + '</span>' : "") + '</button>'
           : '<span class="noimg">' + ICON_CAM + "</span>";
         return (
           '<div class="reveal" style="transition-delay:' + (index % 3) * 90 + 'ms;height:100%">' +
           '<article class="act-card card-in" style="animation-delay:' + (index % 6) * 60 + 'ms">' +
-          '<div class="imgbox">' + img + '<span class="act-tag">' + esc(k.kategori) + "</span></div>" +
+          '<div class="imgbox" data-card-slides>' + imageMarkup + '<span class="act-tag">' + esc(k.kategori) + "</span></div>" +
           '<div class="act-body">' +
           '<p class="act-date">' + ICON_CAL + (k.tanggal ? esc(formatTanggalKegiatan(k.tanggal)) : "Program rutin DKM") + "</p>" +
           "<h3>" + esc(k.judul) + "</h3>" +
@@ -1402,6 +1468,7 @@
         });
       }
       function renderKegiatan() {
+        cardSlideTimers.forEach(clearInterval); cardSlideTimers = [];
         renderChips();
         var q = filterState.query.trim().toLowerCase();
         var filteredAll = sortedKegiatan().filter(function (k) {
@@ -1433,6 +1500,19 @@
           var r = el.getBoundingClientRect();
           if (r.top < window.innerHeight && r.bottom > 0) el.classList.add("is-visible");
         });
+        if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          $$("[data-card-slides]").forEach(function (box) {
+            var slides = $$('[data-card-slide]',box); if (slides.length < 2) return;
+            var trigger = $(".activity-gallery-trigger",box), count = $("[data-card-photo-count]",box), current = 0;
+            trigger.dataset.currentSlide = "0";
+            cardSlideTimers.push(setInterval(function () {
+              if (document.hidden || $("#activityGallery").open || box.matches(":hover")) return;
+              slides[current].hidden = true; current = (current + 1) % slides.length; slides[current].hidden = false;
+              if (count) count.textContent = (current + 1) + " / " + slides.length;
+              trigger.dataset.currentSlide = String(current);
+            },5000));
+          });
+        }
       }
       $$("[data-search]").forEach(function (input) {
         input.addEventListener("input", function () {
@@ -1828,16 +1908,17 @@
           if (!cfg.url || !cfg.anonKey || cfg.url.indexOf("https://") !== 0 || cfg.anonKey.indexOf("ISI_") === 0) return;
           if (!window.supabase) return;
           var client = window.MASJID_PUBLIC_CLIENT = window.supabase.createClient(cfg.url, cfg.anonKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: "masjid-public" } });
-          client.from("kegiatan").select("id,title,description,category,event_date,image_url,created_at")
+          client.from("kegiatan").select("id,title,description,category,event_date,image_url,image_urls,created_at")
             .eq("status", "published")
             .order("event_date", { ascending: false, nullsFirst: false })
             .order("created_at", { ascending: false })
             .then(function (res) {
               if (res.error || !res.data) return;
               var mapped = res.data.map(function (r) {
-                var photoUrl = null;
-                try { var parsed = new URL(r.image_url); if (parsed.protocol === "https:" || parsed.protocol === "http:") photoUrl = parsed.href; } catch (e) {}
-                return { id: r.id, judul: r.title, deskripsi: r.description || "", kategori: r.category || "Kajian", tanggal: r.event_date || null, foto: photoUrl, created_at: r.created_at };
+                var photoUrls = Array.isArray(r.image_urls) ? r.image_urls : [];
+                if (r.image_url && photoUrls.indexOf(r.image_url) === -1) photoUrls.unshift(r.image_url);
+                photoUrls = photoUrls.map(function (value) { try { var parsed = new URL(value); return ["https:","http:"].indexOf(parsed.protocol) !== -1 ? parsed.href : null; } catch (e) { return null; } }).filter(Boolean);
+                return { id: r.id, judul: r.title, deskripsi: r.description || "", kategori: r.category || "Kajian", tanggal: r.event_date || null, foto: photoUrls[0] || null, fotoList: photoUrls, created_at: r.created_at };
               });
               KEGIATAN.length = 0;
               mapped.forEach(function (k) { KEGIATAN.push(k); });

@@ -9,8 +9,13 @@ create table if not exists public.kegiatan (
   category text not null default 'Kajian',
   event_date date,
   image_url text,
+  image_urls jsonb not null default '[]'::jsonb check (jsonb_typeof(image_urls) = 'array'),
   created_at timestamptz not null default now()
 );
+alter table public.kegiatan add column if not exists image_urls jsonb not null default '[]'::jsonb
+  check (jsonb_typeof(image_urls) = 'array');
+update public.kegiatan set image_urls = jsonb_build_array(image_url)
+where image_url is not null and trim(image_url) <> '' and image_urls = '[]'::jsonb;
 alter table public.kegiatan add column if not exists status text not null default 'published'
   check (status in ('draft', 'published', 'archived'));
 alter table public.kegiatan add column if not exists updated_at timestamptz not null default now();

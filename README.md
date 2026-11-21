@@ -6,7 +6,7 @@ Hosting menggunakan Vercel. Tidak memerlukan framework atau instalasi dependency
 ## Fitur
 
 - **Dashboard:** ringkasan kegiatan, pengurus, pengumuman, dan draft.
-- **Kegiatan:** tambah, edit, hapus, cari, filter kategori, upload foto, pratinjau, serta status draft/terbit/arsip.
+- **Kegiatan:** tambah, edit, hapus, cari, filter kategori, galeri hingga 8 foto per kegiatan, pratinjau, serta status draft/terbit/arsip. Foto kartu berganti otomatis dan dapat dibuka sebagai galeri.
 - **Organisasi:** periode, nomor SK, kelompok Penasehat/Pengurus Inti/Seksi/Unit, nama, jabatan, urutan tampil, dan penetapan Ketua DKM.
 - **Pengumuman:** teks, sematkan di atas, tanggal mulai/akhir tayang, draft/terbit/arsip, dan pratinjau.
 - **Profil & Kontak:** nama masjid, teks beranda, Tentang Kami, foto utama, alamat, WhatsApp, Instagram, YouTube, dan Maps.
@@ -18,6 +18,7 @@ Hosting menggunakan Vercel. Tidak memerlukan framework atau instalasi dependency
 
 1. Buka Supabase Dashboard proyek masjid → **SQL Editor**.
 2. Jalankan **seluruh `schema.sql`**. Kegiatan lama tetap tersimpan dan diberi status `published`. SQL ini menambah tabel, kolom, trigger audit, policy RLS, dan bucket `masjid-media`.
+   Untuk pembaruan galeri tanpa menjalankan ulang skema penuh, jalankan `migration-activity-gallery.sql`; foto tunggal yang lama akan masuk ke daftar galeri.
 3. Jalankan **`seed.sql`** untuk memasukkan lima kegiatan serta susunan pengurus lama. ID tetap mencegah duplikasi dan data yang sudah diedit tidak ditimpa. Gunakan saat aktivasi awal; menjalankannya lagi dapat mengembalikan data awal yang pernah dihapus.
 4. Pastikan **Authentication → Sign In / Providers → Email → Allow new users to sign up** nonaktif. Lokasi pengaturan bisa berbeda sesuai versi dashboard. Semua akun yang berhasil login pada aplikasi ini memiliki akses pengurus; belum ada pembagian admin/editor.
 5. Deploy seluruh file terbaru ke Vercel. Environment variable yang sudah ada tetap dapat digunakan.
@@ -63,9 +64,9 @@ Import repository di Vercel, pilih Framework **Other**, lalu atur:
 ## Penggunaan admin
 
 - Login melalui `/admin.html`. Menu ini tidak ditautkan dari website publik.
-- Tambah/edit kegiatan dan pengumuman melalui dialog. **Draft** belum tampil, **Terbit** tampil di website, **Arsip** menyembunyikan konten tanpa menghapusnya.
+- Tambah/edit kegiatan dan pengumuman melalui dialog. Kegiatan dapat memuat hingga 8 foto; kartu berganti foto otomatis setiap 5 detik dan fotonya dapat dibuka dalam galeri. **Draft** belum tampil, **Terbit** tampil di website, **Arsip** menyembunyikan konten tanpa menghapusnya.
 - Pengumuman terbit mengikuti tanggal tayang dalam **WIB**. Tanggal akhir inklusif sampai akhir hari. Tanpa tanggal berarti tidak dibatasi pada sisi tersebut.
-- Upload menerima JPG/PNG/WebP maksimal **5 MB**. Upload lebih dahulu, lalu **simpan form** untuk mengaitkan gambar ke konten. Mengganti gambar atau membatalkan form tidak menghapus file lama dari Storage; pengelola dapat membersihkan file tak terpakai melalui Supabase Storage.
+- Upload menerima JPG/PNG/WebP maksimal **5 MB per foto**. Upload lebih dahulu, lalu **simpan form** untuk mengaitkan gambar ke konten. Mengganti gambar atau membatalkan form tidak menghapus file lama dari Storage; pengelola dapat membersihkan file tak terpakai melalui Supabase Storage.
 - Organisasi memiliki kelompok dan anggota. Urutan lebih kecil tampil lebih dahulu; jika urutan sama, nama menjadi pembanding. Hapus kelompok juga menghapus anggotanya, dengan konfirmasi.
 - Ketua DKM hanya satu dan harus berada di kelompok berjenis **Pengurus inti**. Saat pergantian, lepaskan penetapan ketua lama sebelum menetapkan ketua baru.
 - Donasi hanya ditampilkan ketika diaktifkan dan tersedia rekening lengkap atau QRIS. Tidak ada rekening/QRIS contoh yang dipublikasikan.

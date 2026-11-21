@@ -20,8 +20,23 @@ body { font-size: 14px; }
 .brand-logo { display: block; width: 100%; height: 100%; object-fit: contain; }
 .brand { gap: 11px; font-size: 19px; }
 .brand small { color: #d1e3d3; font-size: 9px; letter-spacing: .15em; }
-.sidebar .brand-mark { border-color: #cde5d0; }
-.sidebar .brand-mark { width: 48px; height: 48px; }
+.sidebar { background: linear-gradient(145deg, #00ad21 0%, #088b25 43%, #075e2c 100%); }
+.sidebar .brand-mark { background: #fff; border-color: #e2eae3; width: 56px; height: 56px; }
+.sidebar .brand-logo { object-fit: contain; }
+.sidebar .brand > span:last-child { color: #fff; }
+.sidebar .brand small { color: #e9f9ec; }
+.sidebar-label { color: #d2f2d4; }
+.side-nav > button { color: rgba(255,255,255,.9); }
+.side-nav > button:hover { background: rgba(255,255,255,.14); }
+.side-nav > button.active { background: #e9f9ec; color: #063d1e; box-shadow: 0 8px 20px rgba(4,45,20,.18); }
+.side-nav > button.active svg { color: #063d1e; opacity: 1; }
+.sidebar-note { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.16); color: #e9f9ec; }
+.sidebar-note strong { color: #fff; }
+.website-link { color: #fff; }
+.sidebar-user { border-color: rgba(255,255,255,.25); }
+.sidebar-user .avatar { background: rgba(255,255,255,.22); color: #fff; }
+.user-info strong, .user-info small { color: #fff; }
+.sidebar-user .icon-button { color: #fff; }
 
 /* Sisi login memakai hijau terang pada logo; dashboard memakai palet hijau homepage. */
 .login-story { background: linear-gradient(145deg, #00ad21 0%, #088b25 43%, #075e2c 100%); }
@@ -99,6 +114,13 @@ input:not([type=checkbox]), select, textarea { font-size: 14px; min-height: 46px
 .confirm-dialog p { font-size: 14px; }
 .toast { font-size: 13px; }
 .workspace-footer { font-size: 11px; }
+
+.activity-image-picker > label { display: block; }
+.activity-image-list { display: grid; grid-template-columns: repeat(auto-fill,minmax(112px,1fr)); gap: 10px; margin-top: 12px; }
+.activity-image-item { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
+.activity-image-item img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.activity-image-item .button { width: 100%; min-height: 36px; border-radius: 0; font-size: 11px; }
+.activity-image-picker input[type="file"] { margin-top: 8px; }
 
 @media (max-width: 1199px) {
   .page-heading h1 { font-size: 31px; }
