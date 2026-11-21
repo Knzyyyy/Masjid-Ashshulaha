@@ -17,7 +17,7 @@
     const apply = (src) => {
       if (!src) return;
       $$(".brand-logo").forEach(img => {
-        img.addEventListener("load", () => { img.hidden = false; $(".brand-fallback", img.parentElement).hidden = true; }, { once: true });
+        img.addEventListener("load", () => { img.hidden = false; }, { once: true });
         img.addEventListener("error", () => { img.hidden = true; }, { once: true });
         img.src = src;
       });

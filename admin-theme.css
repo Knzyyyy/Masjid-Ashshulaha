@@ -11,17 +11,28 @@
   --accent-ink: #063d1e;
   --mint: #e9f9ec;
   --lime: #e9f9ec;
-  --accent: #075e2c;
+  --accent: #00ad21;
   --red: #a82f2f;
 }
 
 body { font-size: 14px; }
-.brand-mark { background: #fff; border-color: #e2eae3; color: var(--accent-deep); width: 46px; height: 46px; padding: 4px; }
+.brand-mark { background: #fff; border-color: #e2eae3; color: var(--accent-deep); width: 56px; height: 56px; padding: 4px; overflow: hidden; }
 .brand-logo { display: block; width: 100%; height: 100%; object-fit: contain; }
-.brand-fallback { display: block; }
 .brand { gap: 11px; font-size: 19px; }
 .brand small { color: #d1e3d3; font-size: 9px; letter-spacing: .15em; }
 .sidebar .brand-mark { border-color: #cde5d0; }
+.sidebar .brand-mark { width: 48px; height: 48px; }
+
+/* Sisi login memakai hijau terang pada logo; dashboard memakai palet hijau homepage. */
+.login-story { background: linear-gradient(145deg, #00ad21 0%, #088b25 43%, #075e2c 100%); }
+.login-story h1 em { color: #e9f9ec; }
+.story-line { background: #b9efad; }
+.login-screen .button.primary,
+.workspace .button.primary { background: #00ad21; color: #fff; }
+.login-screen .button.primary:hover,
+.workspace .button.primary:hover { background: #00931d; }
+.connection .live-dot { background: #00ad21; }
+.connection.failed .live-dot { background: var(--red); }
 
 .sidebar-label { font-size: 10px; color: #a9c7ae; }
 .side-nav > button { min-height: 48px; font-size: 13px; }
