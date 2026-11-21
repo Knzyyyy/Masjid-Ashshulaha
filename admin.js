@@ -11,7 +11,7 @@
   const state = { user: null, view: "dashboard", activities: [], announcements: [], groups: [], members: [], settings: null, ready: {}, errors: [], busy: false, uploads: 0, loading: false };
   let client, editor = null, editorDirty = false, settingsDirty = new Set(), toastTimer, authVersion = 0;
   const defaults = window.MASJID_DEFAULTS;
-  // Logo PNG dihasilkan saat build dari gambar pada navbar homepage.
+  // Logo PNG kecil dihasilkan saat build dari gambar pada navbar homepage.
   // Bila halaman dibuka lewat static server lokal tanpa build, ambil logo dari HTML homepage.
   function loadBrandLogo() {
     const apply = (src) => {
@@ -28,7 +28,8 @@
     }).then(blob => apply(URL.createObjectURL(blob))).catch(() => {
       fetch("./index.html", { cache: "force-cache" }).then(response => response.text()).then(html => {
         const homepage = new DOMParser().parseFromString(html, "text/html");
-        apply(homepage.querySelector("button.brand img[src^='data:image/png;base64,']")?.src);
+        const src = homepage.querySelector("button.brand img")?.getAttribute("src");
+        if (src) apply(new URL(src, new URL("./index.html", location.href)).href);
       }).catch(() => {});
     });
   }
@@ -315,6 +316,25 @@
     } catch(error) { toast(message(error),true); }
     finally { state.busy = false; btn.disabled = false; btn.textContent = text; }
   }
+  async function preparePhoto(file, name) {
+    // QRIS tetap utuh agar kode dan detail penerima tidak rusak oleh kompresi.
+    if (name === "qris_url") return file;
+    let bitmap;
+    try {
+      bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      const context = canvas.getContext("2d");
+      if (!context) return file;
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/webp", .8));
+      if (!blob || blob.type !== "image/webp" || blob.size >= file.size) return file;
+      return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".webp", { type: "image/webp" });
+    } catch { return file; }
+    finally { if (bitmap) bitmap.close(); }
+  }
   async function upload(input) {
     const files = Array.from(input.files || []); if (!files.length || !state.user) return;
     const container = input.closest("form"), name = input.dataset.upload, status = $(`[data-upload-state="${name}"]`,container);
@@ -328,7 +348,8 @@
     $$("button[type=submit]",container).forEach(b => { b.disabled = true; });
     try {
       const uploaded = [];
-      for (const file of files) {
+      for (const original of files) {
+        const file = await preparePhoto(original, name);
         const path = `${state.user.id}/${crypto.randomUUID()}.${extensions[file.type]}`;
         throwError(await client.storage.from("masjid-media").upload(path,file,{cacheControl:"3600",upsert:false,contentType:file.type}));
         const url = client.storage.from("masjid-media").getPublicUrl(path).data.publicUrl;

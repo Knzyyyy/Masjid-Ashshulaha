@@ -732,6 +732,12 @@
       @media (hover: none) {
         .act-card:hover, .kontak-card:hover, .pengurus-card:hover { transform: none; }
       }
+      @media (max-width: 639px), (prefers-reduced-motion: reduce) {
+        .reveal, .timeline-content { opacity: 1; transform: none; transition: none; }
+        .card-in, .pulse-dot { animation: none; }
+        .hero-card, .btn-ghost, .activity-photo-count, header.site-nav.solid { backdrop-filter: none; }
+        .hero-card:not(.solid-card), .btn-ghost { background: rgba(6,40,21,.7); }
+      }
     </style>
   </head>
   <body>
@@ -1266,9 +1272,9 @@
       <div class="gallery-caption"><strong id="galleryTitle"></strong><span class="gallery-position" id="galleryPosition" aria-live="polite"></span></div>
     </dialog>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./config.js"></script>
     <script src="./content-defaults.js"></script>
+    <script src="./public-client.js"></script>
     <script>
       "use strict";
       var $ = function (s, r) { return (r || document).querySelector(s); };
@@ -1336,7 +1342,7 @@
       /* ================= Animasi reveal ================= */
       var revealObs = null;
       function observeReveals() {
-        if (!("IntersectionObserver" in window)) {
+        if (!("IntersectionObserver" in window) || window.matchMedia("(max-width: 639px), (prefers-reduced-motion: reduce)").matches) {
           $$(".reveal").forEach(function (el) { el.classList.add("is-visible"); });
           return;
         }
@@ -1345,7 +1351,7 @@
             entries.forEach(function (e) {
               if (e.isIntersecting) { e.target.classList.add("is-visible"); revealObs.unobserve(e.target); }
             });
-          }, { threshold: 0.1 });
+          }, { rootMargin: "120px 0px", threshold: 0 });
         }
         $$(".reveal:not(.is-visible)").forEach(function (el) { revealObs.observe(el); });
       }
@@ -1362,6 +1368,7 @@
       function showPage(page) {
         currentPage = page;
         $$(".page").forEach(function (p) { p.classList.toggle("active", p.id === "page-" + page); });
+        if (page === "home" || page === "kegiatan") renderKegiatan();
         closeMenus();
         updateNavState();
         observeReveals();
@@ -1411,7 +1418,7 @@
         navEl.classList.toggle("solid", solid);
         navEl.classList.toggle("over-hero", !solid && currentPage === "home");
       }
-      window.addEventListener("scroll", updateNavTheme, { passive: true, capture: true });
+      if (!("IntersectionObserver" in window)) window.addEventListener("scroll", updateNavTheme, { passive: true });
       (function () {
         var sentinel = $("#scrollSentinel");
         if (sentinel && "IntersectionObserver" in window) {
@@ -1525,7 +1532,69 @@
       var ICON_CAL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/></svg>';
       var ICON_CAM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4zM12 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/></svg>';
       var filterState = { kategori: "Semua", query: "" };
-      var cardSlideTimers = [];
+      var cardSlideTimer = null, imageWarmObserver = null, cardViewObserver = null;
+      var visibleCardBoxes = new Set(), activityRenderVersion = 0;
+      var imageVariants = window.MASJID_IMAGE_VARIANTS || {};
+      function loadCardSlide(slide) {
+        if (!slide) return Promise.resolve(false);
+        var image = $("img",slide);
+        if (image._loadPromise) return image._loadPromise;
+        image._loadPromise = new Promise(function (resolve) {
+          image.onload = function () { image.decode().catch(function () {}).then(function () { resolve(true); }); };
+          image.onerror = function () { resolve(false); };
+          if (imageVariants[image.dataset.src]) {
+            image.sizes = "(max-width: 639px) calc(100vw - 32px), (max-width: 1023px) 50vw, 360px";
+            image.srcset = imageVariants[image.dataset.src];
+          }
+          image.src = image.dataset.src;
+        });
+        return image._loadPromise;
+      }
+      function prepareCard(box) {
+        var slides = $$('[data-card-slide]',box);
+        loadCardSlide(slides[0]).then(function (loaded) {
+          if (loaded && box.isConnected && !(navigator.connection && navigator.connection.saveData)) loadCardSlide(slides[1]);
+        });
+      }
+      function initCardImages() {
+        if (imageWarmObserver) imageWarmObserver.disconnect();
+        if (cardViewObserver) cardViewObserver.disconnect();
+        visibleCardBoxes.clear();
+        var boxes = $$(".page.active [data-card-slides]");
+        if ("IntersectionObserver" in window) {
+          imageWarmObserver = new IntersectionObserver(function (entries, observer) {
+            entries.forEach(function (entry) { if (entry.isIntersecting && entry.target.closest(".page.active")) { prepareCard(entry.target); observer.unobserve(entry.target); } });
+          },{rootMargin:"800px 0px",threshold:0});
+          cardViewObserver = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) { if (entry.isIntersecting) visibleCardBoxes.add(entry.target); else visibleCardBoxes.delete(entry.target); });
+          },{threshold:.05});
+          boxes.forEach(function (box) { imageWarmObserver.observe(box); cardViewObserver.observe(box); });
+        } else {
+          boxes.forEach(function (box) { prepareCard(box); visibleCardBoxes.add(box); });
+        }
+        if (cardSlideTimer) clearInterval(cardSlideTimer);
+        cardSlideTimer = null;
+        if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches && boxes.some(function (box) { return $$('[data-card-slide]',box).length > 1; })) {
+          cardSlideTimer = setInterval(function () {
+            if (document.hidden || galleryDialog.open) return;
+            visibleCardBoxes.forEach(function (box) {
+              if (!box.isConnected || !box.closest(".page.active") || box.contains(document.activeElement) || (window.matchMedia("(hover: hover)").matches && box.matches(":hover"))) return;
+              var slides = $$('[data-card-slide]',box), trigger = $(".activity-gallery-trigger",box);
+              if (slides.length < 2 || !trigger || box._rotating) return;
+              var current = Number(trigger.dataset.currentSlide) || 0, next = (current + 1) % slides.length;
+              box._rotating = true;
+              loadCardSlide(slides[next]).then(function (loaded) {
+                box._rotating = false;
+                if (!loaded || !box.isConnected || !visibleCardBoxes.has(box) || galleryDialog.open || document.hidden) return;
+                slides[current].hidden = true; slides[next].hidden = false;
+                trigger.dataset.currentSlide = String(next);
+                $("[data-card-photo-count]",box).textContent = (next + 1) + " / " + slides.length;
+                if (!(navigator.connection && navigator.connection.saveData)) loadCardSlide(slides[(next + 1) % slides.length]);
+              });
+            });
+          },5000);
+        }
+      }
 
       var galleryImages = [], galleryIndex = 0, galleryTouchStart = null;
       var galleryDialog = $("#activityGallery"), galleryImage = $("#galleryImage");
@@ -1536,11 +1605,14 @@
         galleryImage.alt = "Foto " + (galleryIndex + 1) + " dari " + galleryImages.length + " — " + $("#galleryTitle").textContent;
         $("#galleryPosition").textContent = (galleryIndex + 1) + " / " + galleryImages.length;
         galleryDialog.classList.toggle("single-photo", galleryImages.length < 2);
+        if (galleryImages.length > 1 && !(navigator.connection && navigator.connection.saveData)) {
+          var nextImage = new Image(); nextImage.decoding = "async"; nextImage.src = galleryImages[(galleryIndex + 1) % galleryImages.length];
+        }
       }
       document.addEventListener("click", function (event) {
         var trigger = event.target.closest(".activity-gallery-trigger");
         if (trigger) {
-          galleryImages = $$('img',trigger).map(function (image) { return image.currentSrc || image.src; }).filter(Boolean);
+          galleryImages = $$('img',trigger).map(function (image) { return image.dataset.src || image.src; }).filter(Boolean);
           if (!galleryImages.length) return;
           $("#galleryTitle").textContent = $("h3",trigger.closest(".act-card")).textContent;
           showGalleryImage(Number(trigger.dataset.currentSlide) || 0);
@@ -1581,7 +1653,7 @@
         var images = Array.isArray(k.fotoList) ? k.fotoList.filter(Boolean) : [];
         if (k.foto && images.indexOf(k.foto) === -1) images.unshift(k.foto);
         var imageMarkup = images.length
-          ? '<button type="button" class="activity-gallery-trigger" aria-label="Buka galeri foto ' + esc(k.judul) + '">' + images.map(function (url,i) { return '<span class="activity-card-slide" data-card-slide' + (i ? ' hidden' : '') + '><img src="' + esc(url) + '" alt="Foto ' + (i + 1) + ' dari ' + images.length + ' — ' + esc(k.judul) + '" loading="lazy" /></span>'; }).join("") + (images.length > 1 ? '<span class="activity-photo-count" data-card-photo-count>1 / ' + images.length + '</span>' : "") + '</button>'
+          ? '<button type="button" class="activity-gallery-trigger" aria-label="Buka galeri foto ' + esc(k.judul) + '">' + images.map(function (url,i) { return '<span class="activity-card-slide" data-card-slide' + (i ? ' hidden' : '') + '><img data-src="' + esc(url) + '" alt="Foto ' + (i + 1) + ' dari ' + images.length + ' — ' + esc(k.judul) + '" width="960" height="600" decoding="async" /></span>'; }).join("") + (images.length > 1 ? '<span class="activity-photo-count" data-card-photo-count>1 / ' + images.length + '</span>' : "") + '</button>'
           : '<span class="noimg">' + ICON_CAM + "</span>";
         return (
           '<div class="reveal" style="transition-delay:' + (index % 3) * 90 + 'ms;height:100%">' +
@@ -1612,7 +1684,6 @@
         });
       }
       function renderKegiatan() {
-        cardSlideTimers.forEach(clearInterval); cardSlideTimers = [];
         renderChips();
         var q = filterState.query.trim().toLowerCase();
         var filteredAll = sortedKegiatan().filter(function (k) {
@@ -1621,11 +1692,16 @@
           return true;
         });
         [["page-home", false], ["page-kegiatan", true]].forEach(function (cfg) {
+          if (cfg[0] !== "page-" + currentPage) return;
           var root = document.getElementById(cfg[0]);
           var full = cfg[1];
           var list = full ? filteredAll : filteredAll.slice(0, 6);
           var grid = $("[data-grid]", root);
+          var renderKey = JSON.stringify([activityRenderVersion,filterState.kategori,q]);
+          if (grid.dataset.renderKey === renderKey) return;
+          if (revealObs) $$(".reveal",grid).forEach(function (el) { revealObs.unobserve(el); });
           grid.innerHTML = list.map(kegiatanCard).join("");
+          grid.dataset.renderKey = renderKey;
           var note = $("[data-count-note]", root);
           note.textContent =
             (full
@@ -1644,19 +1720,7 @@
           var r = el.getBoundingClientRect();
           if (r.top < window.innerHeight && r.bottom > 0) el.classList.add("is-visible");
         });
-        if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-          $$("[data-card-slides]").forEach(function (box) {
-            var slides = $$('[data-card-slide]',box); if (slides.length < 2) return;
-            var trigger = $(".activity-gallery-trigger",box), count = $("[data-card-photo-count]",box), current = 0;
-            trigger.dataset.currentSlide = "0";
-            cardSlideTimers.push(setInterval(function () {
-              if (document.hidden || $("#activityGallery").open || box.matches(":hover")) return;
-              slides[current].hidden = true; current = (current + 1) % slides.length; slides[current].hidden = false;
-              if (count) count.textContent = (current + 1) + " / " + slides.length;
-              trigger.dataset.currentSlide = String(current);
-            },5000));
-          });
-        }
+        initCardImages();
       }
       $$("[data-search]").forEach(function (input) {
         input.addEventListener("input", function () {
@@ -1743,7 +1807,6 @@
         window.addEventListener("scroll", onScrollOrResize, { capture: true, passive: true });
         window.addEventListener("resize", onScrollOrResize);
         check();
-        setInterval(check, 600);
       })();
 
       /* ================= Salin alamat ================= */
@@ -1897,12 +1960,18 @@
           "Sumber: Aladhan API · Metode Kemenag RI · Koordinat -6.3284625, 106.9294737 · Diperbarui " +
           new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", year: "numeric" }).format(new Date(day.fetchedAt));
       }
+      var heroDateKey = "", afterListKey = "";
+      var heroDateFormatter = new Intl.DateTimeFormat("id-ID", { timeZone: "Asia/Jakarta", weekday: "long", day: "numeric", month: "long", year: "numeric" });
       function tickClock() {
+        if (document.hidden) return;
         var now = new Date();
         var p = wibParts(now);
         $("#heroClock").textContent = pad(p.h) + ":" + pad(p.mi) + ":" + pad(p.s);
-        var tanggalLabel = new Intl.DateTimeFormat("id-ID", { timeZone: "Asia/Jakarta", weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(now);
-        $("#heroDate").textContent = tanggalLabel + (prayer && prayer.today ? " · " + prayer.today.hijriLabel : "");
+        var dateKey = p.y + "-" + p.mo + "-" + p.d + (prayer && prayer.today ? prayer.today.hijriLabel : "");
+        if (heroDateKey !== dateKey) {
+          heroDateKey = dateKey;
+          $("#heroDate").textContent = heroDateFormatter.format(now) + (prayer && prayer.today ? " · " + prayer.today.hijriLabel : "");
+        }
         var next = nextPrayer(now);
         if (next) {
           var remaining = Math.max(0, next.at - wibEpoch(now));
@@ -1922,9 +1991,13 @@
             var box = $("#afterBox");
             if (after.length > 0) {
               box.hidden = false;
-              $("#afterList").innerHTML = after.map(function (a) {
-                return "<li>" + a.name + ' · <span class="tn">' + a.time + "</span>" + (a.besok ? " · besok" : "") + "</li>";
-              }).join("");
+              var afterKey = JSON.stringify(after);
+              if (afterListKey !== afterKey) {
+                afterListKey = afterKey;
+                $("#afterList").innerHTML = after.map(function (a) {
+                  return "<li>" + a.name + ' · <span class="tn">' + a.time + "</span>" + (a.besok ? " · besok" : "") + "</li>";
+                }).join("");
+              }
             } else box.hidden = true;
             // Perbarui penanda "berikutnya/sudah lewat" tiap detik agar akurat.
             renderJadwalListOnly(now, next, remaining);
@@ -2050,8 +2123,8 @@
         try {
           var cfg = window.SUPABASE_CONFIG || {};
           if (!cfg.url || !cfg.anonKey || cfg.url.indexOf("https://") !== 0 || cfg.anonKey.indexOf("ISI_") === 0) return;
-          if (!window.supabase) return;
-          var client = window.MASJID_PUBLIC_CLIENT = window.supabase.createClient(cfg.url, cfg.anonKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: "masjid-public" } });
+          var client = window.MASJID_PUBLIC_CLIENT;
+          if (!client) return;
           client.from("kegiatan").select("id,title,description,category,event_date,image_url,image_urls,created_at")
             .eq("status", "published")
             .order("event_date", { ascending: false, nullsFirst: false })
@@ -2066,6 +2139,7 @@
               });
               KEGIATAN.length = 0;
               mapped.forEach(function (k) { KEGIATAN.push(k); });
+              activityRenderVersion++;
               renderKegiatan();
             })
             .catch(function () {});

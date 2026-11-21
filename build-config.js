@@ -1,48 +1,72 @@
-// Build step untuk Vercel: hasilkan config.js dari environment variable.
-// Dijalankan lewat buildCommand di vercel.json.
-// Kalau env var tidak ada (misalnya preview lokal), file config.js
-// yang sudah ada dibiarkan apa adanya.
+// Hasil build siap deploy di public/. Sumber gambar asli tetap ada di index.html.
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
+const sharp = require("sharp");
 
-// Pakai gambar logo yang sama dengan navbar website pada halaman admin.
-// File PNG dibuat saat build dari data URI yang sudah tertanam di index.html.
-const htmlPath = path.join(__dirname, "index.html");
-const logoMarker = '<img src="data:image/png;base64,';
-const html = fs.readFileSync(htmlPath, "utf8");
-const brandStart = html.indexOf('<button type="button" class="brand"');
-const logoStart = html.indexOf(logoMarker, brandStart);
-if (brandStart !== -1 && logoStart !== -1) {
-  const dataStart = logoStart + '<img src="'.length;
-  const dataEnd = html.indexOf('"', dataStart);
-  const dataUri = html.slice(dataStart, dataEnd);
-  const base64 = dataUri.slice("data:image/png;base64,".length);
-  const logo = Buffer.from(base64, "base64");
-  if (logo.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) {
-    fs.writeFileSync(path.join(__dirname, "masjid-logo.png"), logo);
-    console.log("masjid-logo.png dibuat dari logo website.");
-  } else {
-    throw new Error("Logo Masjid Ash Shulaha di index.html bukan gambar PNG yang valid.");
+async function build() {
+  const output = path.join(__dirname, "public");
+  const assetDir = path.join(output, "assets");
+  fs.mkdirSync(assetDir, { recursive: true });
+  let html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
+  const logoUri = html.match(/<button[^>]*class="brand"[\s\S]*?<img src="(data:image\/png;base64,[^"]+)"/)?.[1];
+  if (!logoUri) throw new Error("Logo website tidak ditemukan.");
+  const heroUri = html.match(/<img class="bg" src="(data:image\/[^\"]+)"/)?.[1];
+  const variants = {};
+  const unique = [...new Set(html.match(/data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+/g) || [])];
+
+  for (const uri of unique) {
+    const original = Buffer.from(uri.split(",")[1], "base64");
+    const image = sharp(original).rotate();
+    const meta = await image.metadata();
+    const isLogo = uri === logoUri;
+    const widths = isLogo ? [160] : uri === heroUri ? [640, 1280, 1920] : [480, 960];
+    const files = [];
+    for (const width of widths.filter(w => w <= meta.width)) {
+      const resized = image.clone().resize({ width, withoutEnlargement: true });
+      const buffer = isLogo ? await resized.png({ compressionLevel: 9, palette: true }).toBuffer() : await resized.webp({ quality: 78, effort: 5 }).toBuffer();
+      const hash = crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 12);
+      const name = `${hash}-${width}.${isLogo ? "png" : "webp"}`;
+      fs.writeFileSync(path.join(assetDir, name), buffer);
+      files.push({ src: `./assets/${name}`, width });
+    }
+    if (!files.length) throw new Error("Ukuran gambar sumber tidak didukung.");
+    const fallback = files.find(f => f.width === 960 || f.width === 1280) || files[0];
+    const srcset = files.map(f => `${f.src} ${f.width}w`).join(", ");
+    variants[fallback.src] = srcset;
+    if (isLogo) fs.copyFileSync(path.join(assetDir, path.basename(fallback.src)), path.join(output, "masjid-logo.png"));
+    // Srcset hanya pada elemen HTML; foto kartu memakai manifest di app.js.
+    html = html.replaceAll(`src="${uri}"`, `src="${fallback.src}"${isLogo ? ` width="160" height="${Math.round(meta.height * 160 / meta.width)}"` : ` srcset="${srcset}" sizes="${uri === heroUri ? '100vw' : '(max-width: 639px) 100vw, 600px'}"`}`);
+    html = html.replaceAll(uri, fallback.src);
   }
-} else {
-  throw new Error("Logo pada navbar index.html tidak ditemukan.");
+
+  html = html.replace(/<img\b[^>]*>/g, tag => {
+    if (/class="bg"/.test(tag)) return tag.replace(/\s*\/>$/, ' fetchpriority="high" decoding="async" />');
+    if (!/decoding=/.test(tag)) tag = tag.replace(/\s*\/>$/, ' decoding="async" />');
+    if (tag.includes('class="qris-image"') || tag.includes('srcset=') || /class="foot-brand"/.test(tag)) {
+      if (!/loading=/.test(tag)) tag = tag.replace(/\s*\/>$/, ' loading="lazy" />');
+    }
+    return tag;
+  });
+  // HTML langsung tampil; script defer tetap dijalankan sesuai urutan.
+  html = html.replace(/<script>\s*([\s\S]*?)<\/script>/, (_, script) => {
+    fs.writeFileSync(path.join(output, "app.js"), `window.MASJID_IMAGE_VARIANTS=${JSON.stringify(variants)};\n${script}`);
+    return '<script src="./app.js" defer></script>';
+  });
+  html = html.replace(/<script src="([^"]+)"(?: defer)?><\/script>/g, '<script src="$1" defer></script>');
+  fs.writeFileSync(path.join(output, "index.html"), html);
+
+  for (const file of ["admin.html", "admin.css", "admin-theme.css", "admin.js", "site-content.js", "content-defaults.js", "public-client.js"]) {
+    fs.copyFileSync(path.join(__dirname, file), path.join(output, file));
+  }
+  const url = process.env.SUPABASE_URL;
+  const anonKey = process.env.SUPABASE_ANON_KEY;
+  if (url && anonKey) {
+    fs.writeFileSync(path.join(output, "config.js"), `// Konfigurasi publik dari environment Vercel.\nwindow.SUPABASE_CONFIG=${JSON.stringify({ url, anonKey })};\n`);
+  } else {
+    fs.copyFileSync(path.join(__dirname, "config.js"), path.join(output, "config.js"));
+  }
+  console.log(`Build selesai: public/index.html ${Math.round(Buffer.byteLength(html) / 1024)} KB; ${unique.length} gambar dipisah dan dioptimalkan.`);
 }
 
-const url = process.env.SUPABASE_URL;
-const anonKey = process.env.SUPABASE_ANON_KEY;
-
-if (url && anonKey) {
-  const out = [
-    "// Dibuat otomatis saat build Vercel dari environment variable.",
-    "// Jangan edit manual file hasil build ini; ubah env var di dashboard Vercel.",
-    "window.SUPABASE_CONFIG = {",
-    "  url: " + JSON.stringify(url) + ",",
-    "  anonKey: " + JSON.stringify(anonKey),
-    "};",
-    ""
-  ].join("\n");
-  fs.writeFileSync(path.join(__dirname, "config.js"), out);
-  console.log("config.js dibuat dari environment variable.");
-} else {
-  console.log("SUPABASE_URL / SUPABASE_ANON_KEY tidak diset — memakai config.js yang ada.");
-}
+build().catch(error => { console.error(error.message); process.exitCode = 1; });

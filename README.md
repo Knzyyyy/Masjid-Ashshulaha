@@ -1,7 +1,7 @@
 # Masjid Ash Shulaha — Website & Ruang Pengurus
 
 Website statis dengan Supabase untuk database, login pengurus, dan upload gambar.
-Hosting menggunakan Vercel. Tidak memerlukan framework atau instalasi dependency aplikasi.
+Hosting menggunakan Vercel. Tidak memerlukan framework. Build menggunakan Node.js 22+ dan Sharp untuk mengecilkan gambar; browser tidak mengunduh dependency build.
 
 ## Fitur
 
@@ -38,14 +38,16 @@ File SQL disiapkan untuk dijalankan oleh pemilik proyek. Mengubah file lokal saj
 Isi `config.js` dengan URL dan publishable key, lalu:
 
 ```sh
-npx serve .
+npm install
+npm run build
+npx serve public
 ```
 
 Buka alamat localhost yang ditampilkan, lalu `/admin.html`. Untuk menghasilkan konfigurasi dari `.env` (Node.js 20.6+):
 
 ```sh
 node --env-file=.env build-config.js
-npx serve .
+npx serve public
 ```
 
 Salin `.env.example` menjadi `.env` dan isi nilainya terlebih dahulu. `.env` tidak dibaca otomatis oleh browser atau `node build-config.js` biasa.
@@ -59,7 +61,9 @@ Import repository di Vercel, pilih Framework **Other**, lalu atur:
 | `SUPABASE_URL` | URL proyek Supabase |
 | `SUPABASE_ANON_KEY` | Publishable key / anon key proyek |
 
-`vercel.json` menjalankan `node build-config.js` untuk membuat konfigurasi browser dan mengekstrak logo homepage menjadi `masjid-logo.png` untuk admin. Setelah mengganti environment variable, deploy ulang.
+`vercel.json` menjalankan `npm run build` dan menerbitkan folder `public/`. Build memisahkan gambar tertanam menjadi PNG/WebP dengan ukuran responsif, membuat logo kecil untuk admin, dan memisahkan JavaScript agar HTML cepat tampil. Nama aset mengikuti hash isinya sehingga aman di-cache selama setahun. Setelah mengganti environment variable atau sumber gambar, build dan deploy ulang. Folder `public/` dihasilkan otomatis dan tidak perlu di-commit.
+
+Sumber `index.html` menyimpan gambar asli untuk build; untuk menguji performa, selalu buka hasil build melalui `npx serve public`. Melayani direktori sumber langsung tetap membawa data gambar asli yang besar.
 
 ## Penggunaan admin
 
@@ -67,6 +71,7 @@ Import repository di Vercel, pilih Framework **Other**, lalu atur:
 - Tambah/edit kegiatan dan pengumuman melalui dialog. Kegiatan dapat memuat hingga 8 foto; kartu berganti foto otomatis setiap 5 detik dan fotonya dapat dibuka dalam galeri. **Draft** belum tampil, **Terbit** tampil di website, **Arsip** menyembunyikan konten tanpa menghapusnya.
 - Pengumuman terbit mengikuti tanggal tayang dalam **WIB**. Tanggal akhir inklusif sampai akhir hari. Tanpa tanggal berarti tidak dibatasi pada sisi tersebut.
 - Upload menerima JPG/PNG/WebP maksimal **5 MB per foto**. Upload lebih dahulu, lalu **simpan form** untuk mengaitkan gambar ke konten. Mengganti gambar atau membatalkan form tidak menghapus file lama dari Storage; pengelola dapat membersihkan file tak terpakai melalui Supabase Storage.
+- Foto kegiatan dan foto beranda baru otomatis dikecilkan ke sisi terpanjang 1600 px dan WebP jika hasilnya lebih ringan. QRIS dipertahankan utuh. Foto yang sudah tersimpan sebelumnya tidak diubah; unggah ulang jika ingin mengecilkannya.
 - Organisasi memiliki kelompok dan anggota. Urutan lebih kecil tampil lebih dahulu; jika urutan sama, nama menjadi pembanding. Hapus kelompok juga menghapus anggotanya, dengan konfirmasi.
 - Ketua DKM hanya satu dan harus berada di kelompok berjenis **Pengurus inti**. Saat pergantian, lepaskan penetapan ketua lama sebelum menetapkan ketua baru.
 - Donasi hanya ditampilkan ketika diaktifkan dan tersedia rekening lengkap atau QRIS. Tidak ada rekening/QRIS contoh yang dipublikasikan.
@@ -87,6 +92,7 @@ Import repository di Vercel, pilih Framework **Other**, lalu atur:
 | --- | --- |
 | `index.html` | Website publik, navigasi, kegiatan, jadwal sholat, dan konten bawaan |
 | `site-content.js` | Integrasi publik untuk profil, organisasi, pengumuman, dan donasi |
+| `public-client.js` | Pembacaan REST anonim tanpa memuat SDK autentikasi di website publik |
 | `admin.html`, `admin.css`, `admin-theme.css`, `admin.js` | Login, dashboard, dan pengelolaan konten |
 | `content-defaults.js` | Nilai awal profil/periode/donasi yang dipakai bersama |
 | `schema.sql` | Skema, migrasi, RLS, audit, dan bucket gambar |

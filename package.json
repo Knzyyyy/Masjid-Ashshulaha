@@ -1,0 +1,10 @@
+{
+  "name": "masjid-ash-shulaha",
+  "private": true,
+  "scripts": {
+    "build": "node build-config.js"
+  },
+  "devDependencies": {
+    "sharp": "0.35.5"
+  }
+}
