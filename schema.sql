@@ -1,5 +1,15 @@
--- Jalankan seluruh file di Supabase SQL Editor, lalu seed.sql.
--- Aman dijalankan ulang pada proyek lama: data kegiatan tidak dihapus.
+-- Setup baru: jalankan file ini di Supabase SQL Editor, lalu seed.sql.
+-- Proyek yang sudah berjalan: gunakan migration-admin-security.sql; tidak perlu seed ulang.
+-- LANGKAH MANUAL PEMILIK PROYEK (tidak memerlukan email/password/key di kode):
+-- 1. Authentication > Users: pilih akun admin Anda dan salin User UID.
+-- 2. Setelah SQL berhasil, jalankan di SQL Editor (ganti placeholder dengan UID tadi):
+--    insert into masjid_private.admin_allowlist (user_id) values ('UID_ADMIN_ANDA'::uuid)
+--    on conflict (user_id) do nothing;
+--    Allowlist kosong menolak semua operasi tulis. Hanya masukkan akun admin Anda.
+-- 3. Authentication > Sign In / Providers > Email: matikan Allow new users to sign up.
+--    Nama/lokasi menu dapat berbeda; jangan mematikan login Email yang dipakai admin.
+-- 4. Vercel: SUPABASE_ANON_KEY harus publishable key (sb_publishable_), bukan secret.
+-- Aman dijalankan ulang: konten dan allowlist yang sudah ada dipertahankan.
 begin;
 
 create table if not exists public.kegiatan (
@@ -105,53 +115,65 @@ drop trigger if exists validate_chair_group on public.organization_groups;
 create trigger validate_chair_group before update on public.organization_groups
   for each row execute function public.validate_organization_chair();
 
--- Hapus policy kegiatan versi lama sebelum membuat policy baru.
-drop policy if exists "Public dapat membaca kegiatan" on public.kegiatan;
-drop policy if exists "Anon dapat menambah kegiatan" on public.kegiatan;
-drop policy if exists "Anon dapat mengubah kegiatan" on public.kegiatan;
-drop policy if exists "Anon dapat menghapus kegiatan" on public.kegiatan;
-drop policy if exists "Admin dapat menambah kegiatan" on public.kegiatan;
-drop policy if exists "Admin dapat mengubah kegiatan" on public.kegiatan;
-drop policy if exists "Admin dapat menghapus kegiatan" on public.kegiatan;
+-- BEGIN MASJID SECURITY (sama dengan migration-admin-security.sql)
+create schema if not exists masjid_private;
+revoke all on schema masjid_private from public, anon, authenticated;
+create table if not exists masjid_private.admin_allowlist (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+alter table masjid_private.admin_allowlist enable row level security;
+revoke all on masjid_private.admin_allowlist from public, anon, authenticated;
 
--- Semua akun Auth adalah pengurus. Nonaktifkan public signup di Supabase Auth.
--- SELECT untuk authenticated wajib ada agar admin dapat membaca/mengubah/menghapus.
+-- RPC hanya mengembalikan kewenangan pemanggil, bukan daftar UID.
+-- Pemilik function harus tetap role pengelola SQL Editor (postgres).
+create or replace function public.is_masjid_admin() returns boolean
+language sql stable security definer set search_path = '' as $$
+  select auth.uid() is not null and exists (
+    select 1 from masjid_private.admin_allowlist where user_id = auth.uid()
+  );
+$$;
+revoke all on function public.is_masjid_admin() from public;
+grant execute on function public.is_masjid_admin() to anon, authenticated;
+
+-- Policy permissive digabung dengan OR: policy lama harus dibuang, bukan ditambah saja.
+-- Hanya lima tabel konten milik aplikasi ini yang diganti policynya.
 do $$
-declare table_name text;
+declare table_name text; policy_row record;
 begin
   foreach table_name in array array['kegiatan','pengumuman','site_settings','organization_groups','organization_members'] loop
     execute format('alter table public.%I enable row level security', table_name);
+    execute format('revoke all on public.%I from public, anon, authenticated', table_name);
     execute format('grant select on public.%I to anon, authenticated', table_name);
-    execute format('grant insert, update, delete on public.%I to authenticated', table_name);
-    execute format('drop policy if exists admin_read on public.%I', table_name);
-    execute format('create policy admin_read on public.%I for select to authenticated using (true)', table_name);
-    execute format('drop policy if exists admin_insert on public.%I', table_name);
-    execute format('create policy admin_insert on public.%I for insert to authenticated with check (true)', table_name);
-    execute format('drop policy if exists admin_update on public.%I', table_name);
-    execute format('create policy admin_update on public.%I for update to authenticated using (true) with check (true)', table_name);
-    execute format('drop policy if exists admin_delete on public.%I', table_name);
-    -- Baris pengaturan tunggal hanya diedit, bukan dihapus.
+    execute format('grant insert, update on public.%I to authenticated', table_name);
+    for policy_row in select policyname from pg_policies where schemaname = 'public' and tablename = table_name loop
+      execute format('drop policy %I on public.%I', policy_row.policyname, table_name);
+    end loop;
+    execute format('create policy admin_read on public.%I for select to authenticated using ((select public.is_masjid_admin()))', table_name);
+    execute format('create policy admin_insert on public.%I for insert to authenticated with check ((select public.is_masjid_admin()))', table_name);
+    execute format('create policy admin_update on public.%I for update to authenticated using ((select public.is_masjid_admin())) with check ((select public.is_masjid_admin()))', table_name);
+    execute format('create policy admin_insert_guard on public.%I as restrictive for insert to anon, authenticated with check ((select public.is_masjid_admin()))', table_name);
+    execute format('create policy admin_update_guard on public.%I as restrictive for update to anon, authenticated using ((select public.is_masjid_admin())) with check ((select public.is_masjid_admin()))', table_name);
+    execute format('create policy admin_delete_guard on public.%I as restrictive for delete to anon, authenticated using ((select public.is_masjid_admin()))', table_name);
     if table_name <> 'site_settings' then
-      execute format('create policy admin_delete on public.%I for delete to authenticated using (true)', table_name);
+      execute format('grant delete on public.%I to authenticated', table_name);
+      execute format('create policy admin_delete on public.%I for delete to authenticated using ((select public.is_masjid_admin()))', table_name);
     end if;
-    execute format('drop policy if exists public_read on public.%I', table_name);
-    execute format('drop trigger if exists stamp_content_update on public.%I', table_name);
-    execute format('create trigger stamp_content_update before insert or update on public.%I for each row execute function public.stamp_content_update()', table_name);
   end loop;
 end;
 $$;
 
-create policy public_read on public.kegiatan for select to anon using (status = 'published');
-create policy public_read on public.pengumuman for select to anon using (
+create policy public_read on public.kegiatan for select to anon, authenticated using (status = 'published');
+create policy public_read on public.pengumuman for select to anon, authenticated using (
   status = 'published'
   and (start_date is null or start_date <= (now() at time zone 'Asia/Jakarta')::date)
   and (end_date is null or end_date >= (now() at time zone 'Asia/Jakarta')::date)
 );
-create policy public_read on public.site_settings for select to anon using (true);
-create policy public_read on public.organization_groups for select to anon using (true);
-create policy public_read on public.organization_members for select to anon using (true);
+create policy public_read on public.site_settings for select to anon, authenticated using (true);
+create policy public_read on public.organization_groups for select to anon, authenticated using (true);
+create policy public_read on public.organization_members for select to anon, authenticated using (true);
 
--- Gambar dapat dibaca publik; upload/hapus hanya oleh akun yang login.
+-- Bucket publik tetap dapat dibaca. Semua mutasi memerlukan admin dan folder UID sendiri.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('masjid-media', 'masjid-media', true, 5242880, array['image/jpeg','image/png','image/webp'])
 on conflict (id) do update set public = true, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
@@ -159,9 +181,41 @@ drop policy if exists "Masjid media read" on storage.objects;
 create policy "Masjid media read" on storage.objects for select to anon, authenticated using (bucket_id = 'masjid-media');
 drop policy if exists "Masjid media upload" on storage.objects;
 create policy "Masjid media upload" on storage.objects for insert to authenticated with check (
-  bucket_id = 'masjid-media' and (storage.foldername(name))[1] = auth.uid()::text
+  bucket_id = 'masjid-media' and (select public.is_masjid_admin())
+  and (storage.foldername(name))[1] = (select auth.uid())::text
 );
 drop policy if exists "Masjid media delete" on storage.objects;
-create policy "Masjid media delete" on storage.objects for delete to authenticated using (bucket_id = 'masjid-media');
+create policy "Masjid media delete" on storage.objects for delete to authenticated using (
+  bucket_id = 'masjid-media' and (select public.is_masjid_admin())
+  and (storage.foldername(name))[1] = (select auth.uid())::text
+);
+
+-- Guard restrictive menahan policy Storage lama yang mungkin terlalu luas.
+-- Bucket lain tidak diubah; UPDATE/upsert masjid-media juga tidak bisa melewati guard.
+drop policy if exists "Masjid media insert guard" on storage.objects;
+create policy "Masjid media insert guard" on storage.objects as restrictive for insert to anon, authenticated with check (
+  bucket_id <> 'masjid-media' or ((select public.is_masjid_admin()) and (storage.foldername(name))[1] = (select auth.uid())::text)
+);
+drop policy if exists "Masjid media update guard" on storage.objects;
+create policy "Masjid media update guard" on storage.objects as restrictive for update to anon, authenticated using (
+  bucket_id <> 'masjid-media' or ((select public.is_masjid_admin()) and (storage.foldername(name))[1] = (select auth.uid())::text)
+) with check (
+  bucket_id <> 'masjid-media' or ((select public.is_masjid_admin()) and (storage.foldername(name))[1] = (select auth.uid())::text)
+);
+drop policy if exists "Masjid media delete guard" on storage.objects;
+create policy "Masjid media delete guard" on storage.objects as restrictive for delete to anon, authenticated using (
+  bucket_id <> 'masjid-media' or ((select public.is_masjid_admin()) and (storage.foldername(name))[1] = (select auth.uid())::text)
+);
+-- END MASJID SECURITY
+
+do $$
+declare table_name text;
+begin
+  foreach table_name in array array['kegiatan','pengumuman','site_settings','organization_groups','organization_members'] loop
+    execute format('drop trigger if exists stamp_content_update on public.%I', table_name);
+    execute format('create trigger stamp_content_update before insert or update on public.%I for each row execute function public.stamp_content_update()', table_name);
+  end loop;
+end;
+$$;
 
 commit;

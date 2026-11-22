@@ -2,9 +2,11 @@
   "name": "masjid-ash-shulaha",
   "private": true,
   "scripts": {
-    "build": "node build-config.js"
+    "build": "node build-config.js",
+    "test:security": "node --test tests/security.test.cjs"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.17",
     "sharp": "0.35.5"
   }
 }

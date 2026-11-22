@@ -4,7 +4,25 @@ const path = require("path");
 const crypto = require("crypto");
 const sharp = require("sharp");
 
+function validatePublicConfig(env) {
+  const anonKey = String(env.SUPABASE_ANON_KEY || "").trim();
+  if (/^sb_secret_/i.test(anonKey) || /service_role/i.test(anonKey)) {
+    throw new Error("SUPABASE_ANON_KEY berisi secret/service_role key. Build dibatalkan; gunakan publishable key (sb_publishable_). Nilai key tidak ditulis atau dicetak.");
+  }
+  if (!/^sb_publishable_[A-Za-z0-9_-]+$/.test(anonKey)) {
+    throw new Error("SUPABASE_ANON_KEY wajib berupa publishable key dengan awalan sb_publishable_. Key kosong, placeholder, anon JWT lama, dan key jenis lain ditolak.");
+  }
+  let url;
+  try { url = new URL(env.SUPABASE_URL); } catch { throw new Error("SUPABASE_URL wajib berupa URL HTTPS proyek Supabase yang valid."); }
+  if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash || url.pathname !== "/") {
+    throw new Error("SUPABASE_URL wajib berupa URL HTTPS proyek Supabase tanpa kredensial, query, atau path tambahan.");
+  }
+  return { url: url.origin, anonKey };
+}
+
 async function build() {
+  // Validasi dilakukan sebelum mkdir/copy/write. config.js sumber tidak pernah disalin.
+  const config = validatePublicConfig(process.env);
   const output = path.join(__dirname, "public");
   const assetDir = path.join(output, "assets");
   fs.mkdirSync(assetDir, { recursive: true });
@@ -59,14 +77,9 @@ async function build() {
   for (const file of ["admin.html", "admin.css", "admin-theme.css", "admin.js", "site-content.js", "content-defaults.js", "public-client.js"]) {
     fs.copyFileSync(path.join(__dirname, file), path.join(output, file));
   }
-  const url = process.env.SUPABASE_URL;
-  const anonKey = process.env.SUPABASE_ANON_KEY;
-  if (url && anonKey) {
-    fs.writeFileSync(path.join(output, "config.js"), `// Konfigurasi publik dari environment Vercel.\nwindow.SUPABASE_CONFIG=${JSON.stringify({ url, anonKey })};\n`);
-  } else {
-    fs.copyFileSync(path.join(__dirname, "config.js"), path.join(output, "config.js"));
-  }
+  fs.writeFileSync(path.join(output, "config.js"), `// Konfigurasi publik dari environment; hanya URL dan publishable key.\nwindow.SUPABASE_CONFIG=${JSON.stringify(config)};\n`);
   console.log(`Build selesai: public/index.html ${Math.round(Buffer.byteLength(html) / 1024)} KB; ${unique.length} gambar dipisah dan dioptimalkan.`);
 }
 
-build().catch(error => { console.error(error.message); process.exitCode = 1; });
+module.exports = { validatePublicConfig, build };
+if (require.main === module) build().catch(error => { console.error(error.message); process.exitCode = 1; });

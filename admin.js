@@ -8,7 +8,7 @@
   const categories = ["Kajian", "Idul Fitri", "Idul Adha", "Remaja", "Sosial"];
   const kinds = { advisor: "Penasehat", core: "Pengurus inti", section: "Seksi", unit: "Unit & pelaksana" };
   const titles = { dashboard: "Dashboard", kegiatan: "Kegiatan", organisasi: "Organisasi", pengumuman: "Pengumuman", profil: "Profil & Kontak", donasi: "Donasi & Infak" };
-  const state = { user: null, view: "dashboard", activities: [], announcements: [], groups: [], members: [], settings: null, ready: {}, errors: [], busy: false, uploads: 0, loading: false };
+  const state = { user: null, isAdmin: false, view: "dashboard", activities: [], announcements: [], groups: [], members: [], settings: null, ready: {}, errors: [], busy: false, uploads: 0, loading: false };
   let client, editor = null, editorDirty = false, settingsDirty = new Set(), toastTimer, authVersion = 0;
   const defaults = window.MASJID_DEFAULTS;
   // Logo PNG kecil dihasilkan saat build dari gambar pada navbar homepage.
@@ -48,8 +48,35 @@
   }
   function message(error) {
     const msg = error?.message || String(error);
-    if (/relation|schema cache|column|does not exist|bucket not found/i.test(msg)) return "Struktur data belum lengkap. Jalankan schema.sql terbaru di SQL Editor Supabase, lalu muat ulang admin.";
+    if (error?.code === "42501" || /row-level security|permission denied|not authorized|forbidden/i.test(msg)) return "Akses ditolak. Akun ini tidak memiliki izin admin atau izin sudah dicabut.";
+    if (error?.code === "PGRST116") return "Data tidak tersedia atau akses ditolak. Muat ulang dan periksa izin admin.";
+    if (error?.code === "PGRST202" || /is_masjid_admin|relation|schema cache|column|does not exist|bucket not found/i.test(msg)) return "Struktur keamanan belum lengkap. Jalankan migration-admin-security.sql di SQL Editor Supabase, daftarkan UID admin, lalu masuk kembali.";
     return msg;
+  }
+  const loginRequired = "Silakan masuk dengan akun admin yang diizinkan untuk mengubah data.";
+  const accessDenied = "Akses ditolak. Akun ini tidak terdaftar sebagai admin masjid.";
+  function showLoginError(error) {
+    $("#loginError").textContent = message(error); $("#loginError").hidden = false;
+  }
+  async function verifyAdminUser() {
+    const { data, error } = await client.auth.getUser();
+    if (error || !data?.user) throw new Error("Sesi login tidak valid atau sudah berakhir. Silakan masuk kembali.");
+    const permission = await client.rpc("is_masjid_admin");
+    throwError(permission);
+    if (permission.data !== true) throw new Error(accessDenied);
+    return data.user;
+  }
+  async function requireAdmin() {
+    if (!client || !state.user || !state.isAdmin) throw new Error(loginRequired);
+    const version = authVersion, userId = state.user.id;
+    try {
+      const user = await verifyAdminUser();
+      if (version !== authVersion || user.id !== userId || state.user?.id !== userId) throw new Error("Sesi akun berubah. Silakan masuk kembali sebelum mengubah data.");
+      return user;
+    } catch (error) {
+      if (version === authVersion) { clearSession(); showLoginError(error); }
+      throw error;
+    }
   }
   function throwError(res) { if (res.error) throw res.error; return res.data; }
   function settings(section) { return { ...defaults[section], ...(state.settings?.[section] || {}) }; }
@@ -177,6 +204,7 @@
     }
   }
   async function loadAll() {
+    if (!state.user || !state.isAdmin) return;
     const currentAuth = authVersion;
     state.loading = true; state.errors = [];
     $("#connection").innerHTML = '<span class="live-dot"></span>Memuat data';
@@ -206,6 +234,7 @@
   }
   async function openEditor(type, id, groupId) {
     if (state.busy) return;
+    try { await requireAdmin(); } catch (error) { toast(message(error), true); return; }
     const collection = { activity:"activities", announcement:"announcements", group:"groups", member:"members" }[type];
     if (!state.ready[collection]) { toast("Data belum siap. Periksa koneksi dan setup database.", true); return; }
     const record = id ? state[collection].find(r => r.id === id) : null;
@@ -235,11 +264,13 @@
   function validateDates(start,end) { if (start && end && end < start) throw new Error("Tanggal akhir harus sama dengan atau setelah tanggal mulai."); }
   async function saveEditor(event) {
     event.preventDefault();
+    if (!state.user || !state.isAdmin) { toast(loginRequired, true); return; }
     if (!editor || state.busy || state.uploads) return;
     state.busy = true;
     const btn = $("#saveBtn"), oldLabel = btn.textContent; btn.disabled = true; btn.textContent = "Menyimpan…";
     $("#editorError").hidden = true;
     try {
+      await requireAdmin();
       const p = cleanStrings(formPayload(event.target)), type = editor.type;
       if (type === "activity") {
         if (!p.title) throw new Error("Judul kegiatan wajib diisi.");
@@ -281,21 +312,24 @@
   }
   async function deleteRecord(type, id) {
     if (state.busy || state.uploads) return;
+    try { await requireAdmin(); } catch (error) { toast(message(error), true); return; }
     const [collection,table] = {activity:["activities","kegiatan"],announcement:["announcements","pengumuman"],group:["groups","organization_groups"],member:["members","organization_members"]}[type];
     const row = state[collection].find(r => r.id === id); if (!row) return;
     const count = type === "group" ? state.members.filter(m => m.group_id === id).length : 0;
     if (!await confirmAction("Hapus " + ({activity:"kegiatan",announcement:"pengumuman",group:"kelompok",member:"pengurus"}[type]) + "?", `“${row.title || row.name}” akan dihapus.${count ? ` ${count} pengurus dalam kelompok ini juga akan dihapus.` : ""}`)) return;
     state.busy = true;
-    try { throwError(await client.from(table).delete().eq("id",id).select("id").single()); await loadAll(); toast("Data berhasil dihapus."); }
+    try { await requireAdmin(); throwError(await client.from(table).delete().eq("id",id).select("id").single()); await loadAll(); toast("Data berhasil dihapus."); }
     catch(error) { toast(message(error),true); }
     finally { state.busy = false; }
   }
   async function saveSettings(form) {
+    if (!state.user || !state.isAdmin) { toast(loginRequired, true); return; }
     const section = form.dataset.settings;
     if (!state.ready.settings || state.busy || state.uploads) return;
     state.busy = true;
     const btn = $("button[type=submit]",form), text = btn.textContent; btn.disabled = true; btn.textContent = "Menyimpan…";
     try {
+      await requireAdmin();
       const p = cleanStrings(formPayload(form));
       if (section === "organization") validateDates(p.start_date,p.end_date);
       if (section === "profile") {
@@ -336,8 +370,9 @@
     finally { if (bitmap) bitmap.close(); }
   }
   async function upload(input) {
-    const files = Array.from(input.files || []); if (!files.length || !state.user) return;
+    const files = Array.from(input.files || []); if (!files.length) return;
     const container = input.closest("form"), name = input.dataset.upload, status = $(`[data-upload-state="${name}"]`,container);
+    if (!state.user || !state.isAdmin) { status.textContent = loginRequired; toast(loginRequired, true); input.value = ""; return; }
     const extensions = {"image/jpeg":"jpg","image/png":"png","image/webp":"webp"};
     if (files.some(file => !extensions[file.type] || file.size > 5 * 1024 * 1024)) { status.textContent = "Setiap foto harus JPG, PNG, atau WebP dengan ukuran maksimal 5 MB."; input.value = ""; return; }
     if (name === "activity_images") {
@@ -350,7 +385,8 @@
       const uploaded = [];
       for (const original of files) {
         const file = await preparePhoto(original, name);
-        const path = `${state.user.id}/${crypto.randomUUID()}.${extensions[file.type]}`;
+        const user = await requireAdmin();
+        const path = `${user.id}/${crypto.randomUUID()}.${extensions[file.type]}`;
         throwError(await client.storage.from("masjid-media").upload(path,file,{cacheControl:"3600",upsert:false,contentType:file.type}));
         const url = client.storage.from("masjid-media").getPublicUrl(path).data.publicUrl;
         uploaded.push(url);
@@ -381,19 +417,30 @@
     $("#previewDialog").showModal();
   }
   function clearSession() {
-    authVersion++; state.user = null; state.ready = {}; state.activities=[]; state.announcements=[]; state.groups=[]; state.members=[]; state.settings=null;
+    authVersion++; state.user = null; state.isAdmin = false; state.ready = {}; state.activities=[]; state.announcements=[]; state.groups=[]; state.members=[]; state.settings=null;
     settingsDirty.clear(); editorDirty = false; editor = null;
     $$("dialog[open]").forEach(d => d.close());
     $("#appShell").hidden = true; $("#loginScreen").hidden = false; setSidebar(false);
   }
   async function applySession(session) {
     if (!session?.user) { clearSession(); return; }
-    if (state.user?.id === session.user.id) return;
-    authVersion++; state.user = session.user;
-    $("#loginScreen").hidden = true; $("#appShell").hidden = false;
-    $("#userEmail").textContent = state.user.email;
-    $("#userInitial").textContent = state.user.email.charAt(0).toUpperCase();
-    renderView(state.view); await loadAll();
+    if (state.user?.id === session.user.id && state.isAdmin) return;
+    const version = ++authVersion;
+    state.user = null; state.isAdmin = false;
+    $("#appShell").hidden = true; $("#loginScreen").hidden = false;
+    try {
+      const user = await verifyAdminUser();
+      if (version !== authVersion) return;
+      if (user.id !== session.user.id) throw new Error("Sesi akun berubah. Silakan masuk kembali.");
+      state.user = user; state.isAdmin = true;
+      $("#loginError").hidden = true;
+      $("#loginScreen").hidden = true; $("#appShell").hidden = false;
+      $("#userEmail").textContent = user.email || "";
+      $("#userInitial").textContent = (user.email || "A").charAt(0).toUpperCase();
+      renderView(state.view); await loadAll();
+    } catch (error) {
+      if (version === authVersion) { clearSession(); showLoginError(error); }
+    }
   }
   $("#loginForm").addEventListener("submit", async event => {
     event.preventDefault(); if (!client) return;
@@ -467,7 +514,7 @@
   async function init() {
     const cfg = window.SUPABASE_CONFIG || {};
     try {
-      if (!cfg.url || !cfg.anonKey || cfg.anonKey.startsWith("ISI_") || cfg.anonKey.startsWith("isi_")) throw new Error("Supabase belum dikonfigurasi. Isi config.js untuk lokal, atau SUPABASE_URL dan SUPABASE_ANON_KEY di Vercel.");
+      if (!cfg.url || !/^sb_publishable_[A-Za-z0-9_-]+$/.test(cfg.anonKey || "") || /service_role/i.test(cfg.anonKey)) throw new Error("Supabase belum dikonfigurasi dengan publishable key. Isi SUPABASE_URL dan SUPABASE_ANON_KEY melalui environment, lalu build ulang.");
       if (!window.supabase) throw new Error("Koneksi belum tersedia. Library Supabase gagal dimuat; periksa internet lalu muat ulang halaman.");
       client = window.supabase.createClient(cfg.url,cfg.anonKey);
       client.auth.onAuthStateChange((event,session) => {

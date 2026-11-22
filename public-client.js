@@ -4,7 +4,7 @@
   const config = window.SUPABASE_CONFIG || {};
   let base;
   try { base = new URL(config.url); } catch { return; }
-  if (base.protocol !== "https:" || !config.anonKey || /^isi_/i.test(config.anonKey)) return;
+  if (base.protocol !== "https:" || !/^sb_publishable_[A-Za-z0-9_-]+$/.test(config.anonKey || "") || /service_role/i.test(config.anonKey)) return;
   window.MASJID_PUBLIC_CLIENT = {
     from(table) {
       const params = new URLSearchParams(), orders = [];
